@@ -127,11 +127,15 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
         return initialResultados;
     }
 
-    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Caja)
-    const capitalProyectado = calcularCapitalProyectado(aporteActual, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
-    
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
+    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
+    let capitalProyectado = 0;
 
+    // *** MODIFICACIÓN CLAVE: Solo calcular si AFAP está activa ***
+    if (datos.afapActiva) {
+        capitalProyectado = calcularCapitalProyectado(aporteActual, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
+    }
+
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
     // *** CAMBIO CRÍTICO APLICADO: SOLO 55% ***
     let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
     const ingresoMensualTotal = ingresoBase;
@@ -573,7 +577,8 @@ const CalculatorTabs: React.FC = () => {
                     <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Local)</h3>
                     <div className="results-card">
                         <div className="result-item">
-                            <span>Ahorro Total Estimado (Capital AFAP/Ahorro):</span>
+                            {/* TÍTULO CORREGIDO PARA MOSTRAR LA CONEXIÓN AFAP/CAPITAL */}
+                            <span>Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin Aporte AFAP - 0 UYU)'}:</span>
                             <span className="result-value-nowrap">{resultados.ahorroTotal} UYU</span>
                         </div>
                         <div className="result-item" style={{ borderBottom: 'none' }}>
@@ -632,7 +637,7 @@ const CalculatorTabs: React.FC = () => {
     };
 
     return (
-        <div className="calculator-tabs-component">
+        <div className="calculator-tabs-component" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 15px' }}>
             <div className="header-tabs">
                 <button 
                     className={`tab-header ${activeTab === 'datos' ? 'active' : ''}`}
