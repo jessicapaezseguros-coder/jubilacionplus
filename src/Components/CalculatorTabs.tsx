@@ -562,7 +562,7 @@ const CalculatorTabs: React.FC = () => {
         );
     };
 
-    // Render de la pestaña Proyección
+    // Render de la pestaña Proyección (CORREGIDO Y CLARIFICADO)
     const renderProyeccion = () => {
         if (!resultados.simulacionRealizada) {
             return (
@@ -586,13 +586,45 @@ const CalculatorTabs: React.FC = () => {
         }
 
         const aporteActual = getAporteActual(datosClave);
+        const ingresoMensualFinal = Number(resultados.ingresoMensual.replace(/\./g, ''));
         
-        // Texto actualizado para reflejar que la renta AFAP se ve reflejada solo en el capital.
-        const AnalysisText = datosClave.afapActiva ? (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual o el mínimo educativo. **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
-        ) : (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual o el mínimo educativo).</span>
-        );
+        // Cálculos para la lógica del análisis
+        const TASA_REEMPLAZO_REDONDEADA = Math.round(TASA_REEMPLAZO_BPS_CAJA * 100);
+        const ingresoBaseCalculado = aporteActual * TASA_REEMPLAZO_BPS_CAJA;
+        
+        // Componentes del Análisis
+        const AFAP_NOTE = datosClave.afapActiva 
+            ? <span> **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base.</span>
+            : null;
+
+        let analysisTitle;
+        let paragraphContent;
+
+        if (ingresoBaseCalculado < MINIMO_INGRESOMENSUAL_EDUCATIVO) {
+            // SCENARIO 1: MÍNIMO APLICADO (20.000 UYU en este caso)
+            analysisTitle = "1. Cobertura por Mínimo Educativo (Base Cubierta):";
+            
+            paragraphContent = (
+                <p>
+                    Tu proyección de ingreso mensual estimada es de <strong>{resultados.ingresoMensual} UYU</strong>. Este monto se basa en el **Mínimo Jubilatorio Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU)**, ya que el cálculo del {datosClave.tipoAporte} ({TASA_REEMPLAZO_REDONDEADA}% de tu aporte actual) sería de {formatUYU(ingresoBaseCalculado)} UYU, pero el simulador aplica el piso. {AFAP_NOTE}
+                    <br/><br/>
+                    Dado que el ingreso base es **mayor** a tu aporte actual de {formatUYU(aporteActual)} UYU (asumido como tu nivel de vida deseado), tu **base está cubierta o superada**. No obstante, este es el piso del sistema. Para asegurar una calidad de vida confortable y no solo la base, la planificación complementaria sigue siendo esencial.
+                </p>
+            );
+
+        } else {
+            // SCENARIO 2: REGLA DEL 55% APLICADA (Ingreso > 20.000 UYU)
+            const brecha = aporteActual - ingresoMensualFinal;
+            
+            analysisTitle = "1. La Brecha Previsional (Foco Educativo):";
+            paragraphContent = (
+                <p>
+                    Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> (Calculada como el **{TASA_REEMPLAZO_REDONDEADA}%** de tu aporte actual). {AFAP_NOTE}
+                    <br/><br/>
+                    Esto representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual de {formatUYU(aporteActual)} UYU (asumiendo tu nivel de vida deseado). La diferencia de **{formatUYU(brecha)} UYU** es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
+                </p>
+            );
+        }
         
         return (
             <div className="panel-container col-layout-proyeccion-custom">
@@ -619,11 +651,8 @@ const CalculatorTabs: React.FC = () => {
                         </h4>
                         <ol>
                             <li>
-                                <p>
-                                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
-                                    {AnalysisText} 
-                                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
-                                </p>
+                                <strong>{analysisTitle}</strong> 
+                                {paragraphContent}
                             </li>
                             <li>
                                 <p>
