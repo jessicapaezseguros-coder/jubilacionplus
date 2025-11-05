@@ -16,8 +16,6 @@ interface CategoriaCaja {
 // Tipos de Datos Clave (Estado Principal)
 interface DatosClave {
     tipoAporte: TipoAporte;
-    // **IMPORTANTE:** edadActual y edadRetiro se mantienen como number para CÁLCULO,
-    // pero se manejan como string/number temporalmente en el estado para la edición fluida.
     edadActual: number; 
     edadRetiro: number;
     // BPS
@@ -41,8 +39,10 @@ interface ResultadosProyeccion {
 // Constantes de Simulación
 const TASA_CRECIMIENTO_ANUAL = 0.04; // 4% de rendimiento AFAP/Ahorro simulado
 const TASA_REEMPLAZO_BPS_CAJA = 0.55; // Tasa de reemplazo simulada (55% del promedio)
-const RENTA_ADICIONAL_AFAP_MENSUAL = 7500; // Simulación de renta extra por AFAP.
-const JUBILACION_MINIMA_SIMULADA = 18500; // Jubilación mínima simulada en UYU (por ejemplo, ~18.500 UYU)
+
+// LÍMITES LEGALES (Ley 20.130) para fines de validación
+const EDAD_MINIMA_RETIRO = 65; // Mínimo legal de edad para jubilarse en Uruguay
+const AÑOS_MINIMOS_SERVICIO = 30; // Mínimo legal de años de servicio
 
 // Opciones de la Caja de Profesionales (CJPPU)
 const CATEGORIAS_CAJA: CategoriaCaja[] = [
@@ -59,7 +59,7 @@ const CATEGORIAS_CAJA: CategoriaCaja[] = [
     { nombre: '10ma. Cat.', aporte: 33855 },
 ];
 
-// Opciones de AFAP (Oficiales y Corregidas)
+// Opciones de AFAP
 const AFAP_OPTIONS: string[] = ['República AFAP', 'AFAP Sura', 'Unión Capital AFAP', 'Integración AFAP'];
 
 
@@ -116,8 +116,7 @@ const calcularCapitalProyectado = (aporteMensual: number, años: number, tasaAnu
 // Lógica principal de la simulación
 const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
     const aporteActual = getAporteActual(datos);
-    const añosRestantes = datos.edadRetiro - datos.edadActual;
-
+    
     // Se asegura de que la edad actual y de retiro sean números válidos para el cálculo
     const edadActualCalculo = datos.edadActual === null || isNaN(datos.edadActual) ? 0 : datos.edadActual;
     const edadRetiroCalculo = datos.edadRetiro === null || isNaN(datos.edadRetiro) ? 0 : datos.edadRetiro;
@@ -128,24 +127,14 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
         return initialResultados;
     }
 
-    // 1. CÁLCULO DEL CAPITAL PROYECTADO
+    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Caja)
     const capitalProyectado = calcularCapitalProyectado(aporteActual, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
     
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión + Renta AFAP)
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
 
-    // a) Ingreso Base (Pensión/Jubilación por BPS/Caja)
+    // *** CAMBIO CRÍTICO APLICADO: SOLO 55% ***
     let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
-    
-    // b) Aplicar un mínimo simulado 
-    if (ingresoBase < JUBILACION_MINIMA_SIMULADA) {
-        ingresoBase = JUBILACION_MINIMA_SIMULADA;
-    }
-    
-    // c) Renta AFAP
-    const rentaAFAP = datos.afapActiva ? RENTA_ADICIONAL_AFAP_MENSUAL : 0; 
-    
-    // d) Ingreso Mensual Total
-    const ingresoMensualTotal = ingresoBase + rentaAFAP;
+    const ingresoMensualTotal = ingresoBase;
     
     // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
     const porcentajeAporte = Math.min(100, (ingresoMensualTotal / aporteActual) * 100).toFixed(0); 
@@ -168,8 +157,9 @@ const CalculatorTabs: React.FC = () => {
     const [datosClave, setDatosClave] = useState<DatosClave>(initialDatosClave);
     const [isCalculating, setIsCalculating] = useState<boolean>(false);
     const [showBpsAporteWarning, setShowBpsAporteWarning] = useState<boolean>(false);
+    const [ageServiceWarning, setAgeServiceWarning] = useState<boolean>(false); 
 
-    // **NUEVO ESTADO TEMPORAL PARA LA EDICIÓN:** Mantiene el valor como string mientras el usuario escribe
+    // **ESTADO TEMPORAL PARA LA EDICIÓN:** Mantiene el valor como string mientras el usuario escribe
     const [tempEdad, setTempEdad] = useState({
         edadActual: initialDatosClave.edadActual.toString(),
         edadRetiro: initialDatosClave.edadRetiro.toString(),
@@ -199,7 +189,7 @@ const CalculatorTabs: React.FC = () => {
         const maxAge = 99;
 
         if (value === '' || isNaN(numValue)) {
-            // Si el campo está vacío, ponemos null o 0 para evitar errores en el cálculo
+            // Si el campo está vacío, ponemos 0 para evitar errores en el cálculo
             setDatosClave(prev => ({ ...prev, [name]: 0 })); 
         } else {
             // Aplicar límites y actualizar el estado de cálculo (datosClave)
@@ -239,15 +229,24 @@ const CalculatorTabs: React.FC = () => {
     const handleCalculate = useCallback(() => {
         if (isCalculating) return;
         
-        // Validación básica
+        // Validación: Aporte
         if (datosClave.tipoAporte === 'BPS' && datosClave.aporteBaseBps <= 0) {
             setShowBpsAporteWarning(true);
             return;
         }
-        if (datosClave.edadActual < 18 || datosClave.edadRetiro < datosClave.edadActual) {
-             // Podrías agregar un aviso aquí si las edades no tienen sentido, pero por ahora solo prevenimos el cálculo
+
+        // Validación: Edades Lógicas
+        if (datosClave.edadActual < 18 || datosClave.edadRetiro <= datosClave.edadActual) {
              return; 
         }
+        
+        // Validación: Mínimos Legales (Solo muestra advertencia, no detiene el cálculo)
+        if (datosClave.edadRetiro < EDAD_MINIMA_RETIRO || añosRestantes < AÑOS_MINIMOS_SERVICIO) {
+            setAgeServiceWarning(true);
+        } else {
+            setAgeServiceWarning(false);
+        }
+
 
         setIsCalculating(true);
         setTimeout(() => {
@@ -255,7 +254,7 @@ const CalculatorTabs: React.FC = () => {
             setActiveTab('proyeccion');
             setIsCalculating(false);
         }, 500); 
-    }, [datosClave, isCalculating]);
+    }, [datosClave, isCalculating, añosRestantes]); // añosRestantes añadido a las dependencias
 
     // Lógica de actualización del Aporte Base de Caja
     useEffect(() => {
@@ -362,7 +361,7 @@ const CalculatorTabs: React.FC = () => {
                                 <option key={afap} value={afap}>{afap}</option>
                             ))}
                         </select>
-                        <span className="info-text">Tu AFAP se considera para un mayor rendimiento (simulado).</span>
+                        <span className="info-text">Tu AFAP se considera para la proyección del capital acumulado.</span>
                     </div>
                 )}
                 
@@ -446,6 +445,12 @@ const CalculatorTabs: React.FC = () => {
                             Por favor, ingrese un Aporte Mensual Base (UYU) válido y superior a 0 para realizar la simulación.
                         </div>
                     )}
+                    
+                    {ageServiceWarning && ( // ADVERTENCIA LEY 20.130
+                        <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404' }}>
+                            ADVERTENCIA: La Ley 20.130 exige **mínimo {EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio**. Tu configuración no cumple con estos mínimos. La proyección es solo educativa.
+                        </div>
+                    )}
                 </div>
 
                 <div className="panel-right">
@@ -515,6 +520,12 @@ const CalculatorTabs: React.FC = () => {
                         ))}
                     </div>
                     <span className="info-text" style={{ textAlign: 'left', marginTop: '10px' }}>Valores basados en la escala de Cuota Unificada vigente.</span>
+                    
+                    {ageServiceWarning && ( // ADVERTENCIA LEY 20.130
+                        <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '25px' }}>
+                            ADVERTENCIA: La Ley 20.130 exige **mínimo {EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio**. Tu configuración no cumple con estos mínimos. La proyección es solo educativa.
+                        </div>
+                    )}
                 </div>
 
                 <div className="panel-right">
@@ -548,16 +559,12 @@ const CalculatorTabs: React.FC = () => {
         }
 
         const aporteActual = getAporteActual(datosClave);
-        const ingresoBaseSimulado = Math.max(aporteActual * TASA_REEMPLAZO_BPS_CAJA, JUBILACION_MINIMA_SIMULADA);
         
-        // Determina si el resultado está "fijado" por la mínima simulada
-        const isMinimaApplied = ingresoBaseSimulado === JUBILACION_MINIMA_SIMULADA;
-        
-        // Definición de componentes/texto condicional
-        const MinimaAppliedText = isMinimaApplied ? (
-            <span> (que incluye la aplicación de la **Jubilación Mínima Simulada** de {formatUYU(JUBILACION_MINIMA_SIMULADA)} UYU más la Renta AFAP)</span>
+        // Texto actualizado para reflejar que la renta AFAP se ve reflejada solo en el capital.
+        const AnalysisText = datosClave.afapActiva ? (
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual. **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
         ) : (
-            <span> (que es un porcentaje de tu aporte actual más la Renta AFAP)</span>
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual).</span>
         );
         
         return (
@@ -566,11 +573,12 @@ const CalculatorTabs: React.FC = () => {
                     <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Local)</h3>
                     <div className="results-card">
                         <div className="result-item">
-                            <span>Ahorro Total Estimado (Capital AFAP/Caja):</span>
+                            <span>Ahorro Total Estimado (Capital AFAP/Ahorro):</span>
                             <span className="result-value-nowrap">{resultados.ahorroTotal} UYU</span>
                         </div>
                         <div className="result-item" style={{ borderBottom: 'none' }}>
-                            <span>Ingreso Mensual Estimado en Retiro (BPS/Caja + Renta AFAP):</span>
+                            {/* TÍTULO CORREGIDO: SE ELIMINA LA REFERENCIA A RENTA AFAP */}
+                            <span>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
                             <span className="result-value-nowrap">{resultados.ingresoMensual} UYU</span>
                         </div>
                     </div>
@@ -585,18 +593,23 @@ const CalculatorTabs: React.FC = () => {
                             <li>
                                 <p>
                                     <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
-                                    {MinimaAppliedText} 
+                                    {AnalysisText} 
                                     representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
                                 </p>
                             </li>
                             <li>
                                 <p>
-                                    <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema de seguridad social uruguayo está diseñado para proporcionar una <strong>base de sustentación</strong>. Los fondos de ahorro estatales y las AFAP, por sí solos, raras veces alcanzan el 100% del ingreso activo. Es por eso que se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como <strong>Seguros de Renta Personal</strong> o <strong>Ahorro + Vida</strong>. Estos productos ofrecen rendimientos optimizados y blindaje financiero.
+                                    <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema de seguridad social uruguayo está diseñado para proporcionar una <strong>base de sustentación</strong>. La renta de AFAP, al momento del retiro, se calcula sobre tu **capital acumulado**, no sobre un monto fijo, y está sujeta a la ley de anualidades. Es por eso que se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como <strong>Seguros de Renta Personal</strong> o <strong>Ahorro + Vida</strong>. Estos productos ofrecen rendimientos optimizados y blindaje financiero.
                                 </p>
                             </li>
                             <li>
                                 <p>
-                                    <strong>3. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. El paso más importante es iniciar un plan de ahorro privado con aportes fijos. Si bien la simulación te da una base, es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta que se ajuste a tus metas (sea <strong>Renta, Ahorro + Vida</strong> u otra).
+                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la jubilación por edad. Tu planificación debe estar enfocada en cumplir estos requisitos **además** de la meta de ahorro.
+                                </p>
+                            </li>
+                            <li>
+                                <p>
+                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. El paso más importante es iniciar un plan de ahorro privado con aportes fijos. Si bien la simulación te da una base, es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta que se ajuste a tus metas (sea <strong>Renta, Ahorro + Vida</strong> u otra).
                                 </p>
                             </li>
                         </ol>
