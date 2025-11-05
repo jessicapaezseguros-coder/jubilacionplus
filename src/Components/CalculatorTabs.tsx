@@ -39,6 +39,7 @@ interface ResultadosProyeccion {
 // Constantes de Simulación
 const TASA_CRECIMIENTO_ANUAL = 0.04; // 4% de rendimiento AFAP/Ahorro simulado
 const TASA_REEMPLAZO_BPS_CAJA = 0.55; // Tasa de reemplazo simulada (55% del promedio)
+const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000; // Valor de piso para simulación (representa mínimo jubilatorio)
 
 // LÍMITES LEGALES (Ley 20.130) para fines de validación
 const EDAD_MINIMA_RETIRO = 65; // Mínimo legal de edad para jubilarse en Uruguay
@@ -136,9 +137,11 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
     }
 
     // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
-    // *** CAMBIO CRÍTICO APLICADO: SOLO 55% ***
+    // *** APLICACIÓN DE LA REGLA DEL 55% ***
     let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
-    const ingresoMensualTotal = ingresoBase;
+    
+    // *** MODIFICACIÓN CRÍTICA: APLICAR MÍNIMO JUBILATORIO (EDUCATIVO) ***
+    let ingresoMensualTotal = Math.max(ingresoBase, MINIMO_INGRESOMENSUAL_EDUCATIVO);
     
     // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
     const porcentajeAporte = Math.min(100, (ingresoMensualTotal / aporteActual) * 100).toFixed(0); 
@@ -291,22 +294,42 @@ const CalculatorTabs: React.FC = () => {
     // 4. RENDERS ESPECÍFICOS DE PESTAÑAS
     // =========================================================================
 
-    // Tarjeta del Asesor (Fija)
+    // Tarjeta del Asesor (Fija) - DISEÑO FINAL
     const AsesorCard: React.FC = () => (
         <div className="asesor-card">
             <h3>¿Listo para Cerrar la Brecha?</h3>
             <p>Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:</p>
             
             <div className="asesor-logo-text">
-                <p className="logo-line-1">JUBILACIÓN+</p>
-                <p className="logo-line-anticipate">ANTicipate</p>
-                <p className="logo-line-2-lic">LIC.</p>
-                <p className="logo-line-2-name">JESSICA PAEZ</p>
-                <p className="logo-line-3">ASESORA TÉCNICA EN SEGUROS PERSONALES</p>
-                <p className="logo-line-4">097113110</p>
+                {/* LOGO: JUBILACIÓN+ en su propia línea */}
+                <p className="logo-line-1" style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '2px', lineHeight: '1.1' }}>
+                    JUBILACIÓN+
+                </p>
+                {/* LOGO: ANTICIPATE en su propia línea */}
+                <p className="logo-line-anticipate" style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '2px', lineHeight: '1.1', marginBottom: '15px' }}>
+                    ANTICIPATE
+                </p>
+                
+                {/* LIC. JESSICA PAEZ - AGRANDADO Y JERARQUIZADO */}
+                <p className="logo-line-2-lic" style={{ fontSize: '1.3rem', fontWeight: 600, marginTop: '20px', lineHeight: '1.1' }}>
+                    LIC.
+                </p>
+                <p className="logo-line-2-name" style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '1px', lineHeight: '1.1', textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
+                    JESSICA PAEZ
+                </p>
+                
+                {/* ROL ASESORA TÉCNICA */}
+                <p className="logo-line-3" style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '10px' }}>
+                    ASESORA TÉCNICA EN SEGUROS PERSONALES
+                </p>
+                
+                {/* TELÉFONO */}
+                <p className="logo-line-4" style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '20px', backgroundColor: 'rgba(255,255,255,0.7)', color: '#333', padding: '5px 15px', borderRadius: '5px' }}>
+                    097113110
+                </p>
             </div>
 
-            <p>Te ofrezco una asesoría sin costo para convertir estos números en un plan de acción real.</p>
+            <p style={{ marginTop: '20px' }}>Te ofrezco una asesoría sin costo para convertir estos números en un plan de acción real.</p>
             
             <a 
                 href="https://wa.me/59897113110" 
@@ -431,7 +454,7 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* *** BPS: SOLO INGRESO MANUAL, SIN BOTONES DE EJEMPLO *** */}
+                    {/* *** BPS: SOLO INGRESO MANUAL *** */}
                     <div className="form-group" style={{marginTop: '25px', marginBottom: '25px'}}>
                         <label htmlFor="customAporte">Ingrese su Aporte Mensual Base (UYU):</label>
                         <input 
@@ -566,9 +589,9 @@ const CalculatorTabs: React.FC = () => {
         
         // Texto actualizado para reflejar que la renta AFAP se ve reflejada solo en el capital.
         const AnalysisText = datosClave.afapActiva ? (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual. **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual o el mínimo educativo. **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
         ) : (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual).</span>
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual o el mínimo educativo).</span>
         );
         
         return (
@@ -637,6 +660,7 @@ const CalculatorTabs: React.FC = () => {
     };
 
     return (
+        // Estilos para hacer el componente responsive y centrado en PC
         <div className="calculator-tabs-component" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 15px' }}>
             <div className="header-tabs">
                 <button 
