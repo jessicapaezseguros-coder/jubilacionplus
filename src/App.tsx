@@ -8,6 +8,7 @@ const App: React.FC = () => {
             <header className="app-header">
                 <div className="logo-container">
                     <div className="logo-main-line">
+                        {/* Se eliminó la referencia a logo_app.jpg */}
                         <span className="logo-j">J</span>
                         <h1 className="logo-title">JUBILACIÓN</h1>
                         <span className="logo-plus">+</span>
