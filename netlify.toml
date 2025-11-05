@@ -1,0 +1,15 @@
+# netlify.toml
+
+[build]
+  # El comando que ejecuta Vite para construir la aplicación
+  command = "npm run build"
+  # El directorio donde Vite pone los archivos estáticos de la versión de producción
+  publish = "dist"
+
+# Redireccionamiento para aplicaciones Single Page (SPA) como React/Vite
+# Esto es esencial para que las rutas internas de la app (ej: /proyeccion) funcionen 
+# y no muestren un error 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

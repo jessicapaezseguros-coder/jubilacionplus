@@ -1,0 +1,341 @@
+/* Variables de Diseño */
+:root {
+    --bg-color: #1a1a2e; /* Azul oscuro */
+    --card-bg: #1e2a3a;  /* Azul grisáceo */
+    --text-color: #ffffff;
+    --primary-color: #ffcc00; /* Dorado/Amarillo para acentos */
+    --secondary-color: #00bcd4; /* Azul cian para resultados */
+    --border-radius: 8px;
+    --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilos Globales */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Encabezado (Header) */
+.header {
+    background: var(--card-bg);
+    color: var(--text-color);
+    padding: 15px 30px;
+    box-shadow: var(--shadow-light);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.app-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-right: 15px;
+    border: 3px solid var(--primary-color);
+    object-fit: cover;
+}
+
+.app-title {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.app-tagline {
+    font-size: 0.9em;
+    color: #bbb;
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid #555;
+}
+
+/* Contenedor Principal */
+#root {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+/* Estilos de la Calculadora */
+.calculator-wrapper {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 25px;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    flex-grow: 1;
+}
+
+/* Selector BPS / Caja */
+.system-selector {
+    display: flex;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background-color: #2c3e50;
+}
+
+.system-button {
+    flex-grow: 1;
+    padding: 12px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background-color: #2c3e50;
+    color: #aaa;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.system-button:hover:not(.active) {
+    background-color: #34495e;
+}
+
+.system-button.active {
+    background-color: var(--secondary-color);
+    color: var(--bg-color);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Navegación por Pestañas */
+.tabs-navigation {
+    display: flex;
+    border-bottom: 2px solid #3e4a5e;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    color: #999;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: color 0.3s, border-bottom 0.3s;
+}
+
+.tab-button:hover {
+    color: var(--primary-color);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: bold;
+}
+
+/* Formularios y Campos */
+.section-title {
+    color: var(--primary-color);
+    border-bottom: 1px solid #3e4a5e;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #ccc;
+}
+
+/* Estilo para el input de texto y select */
+.input-group input[type="number"], .select-input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid #444;
+    background-color: #2c3e50;
+    color: var(--text-color);
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.input-group input[type="number"]:focus, .select-input:focus {
+    border-color: var(--secondary-color);
+    outline: none;
+}
+
+/* Estilo específico para el checkbox label */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #ccc;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+    /* Estilos para hacer el checkbox visible y con tema oscuro */
+    appearance: none;
+    -webkit-appearance: none;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    background-color: #2c3e50;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Botón de Cálculo */
+.calculate-button {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s, opacity 0.3s;
+}
+
+.calculate-button:hover {
+    background-color: #ffdf6b;
+}
+
+.calculate-button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Resultados */
+.simulation-results {
+    padding-top: 10px;
+}
+
+.result-item {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    border-bottom: 1px dashed #3e4a5e;
+    padding-bottom: 10px;
+}
+
+.result-value {
+    color: var(--secondary-color);
+    font-weight: bold;
+    float: right;
+}
+
+.error-message {
+    background-color: #a72d3e;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+}
+
+/* Caja de Análisis de IA */
+.ai-analysis-box {
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #2c3e50;
+    border-left: 4px solid var(--primary-color);
+    border-radius: var(--border-radius);
+}
+
+.ai-analysis-box h4 {
+    color: var(--primary-color);
+    margin-top: 0;
+    font-size: 1.2em;
+}
+
+.ai-analysis-box p {
+    font-style: italic;
+    color: #eee;
+}
+
+/* Información de Contacto */
+.contact-info {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    border-top: 1px solid #3e4a5e;
+}
+
+.contact-info h4 {
+    color: var(--secondary-color);
+    margin-bottom: 15px;
+}
+
+.jessica-paez-logo {
+    width: 150px;
+    height: auto;
+    border-radius: var(--border-radius);
+    margin: 15px 0;
+    box-shadow: var(--shadow-light);
+}
+
+.whatsapp-button {
+    display: inline-block;
+    background-color: #25d366; /* Verde WhatsApp */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: background-color 0.3s;
+}
+
+.whatsapp-button:hover {
+    background-color: #128c7e;
+}
+
+.whatsapp-button i {
+    margin-right: 8px;
+}
+
+/* Disclaimer */
+.disclaimer-text {
+    margin-top: 30px;
+    font-size: 0.8em;
+    color: #777;
+    text-align: center;
+    padding-top: 15px;
+    border-top: 1px dashed #3e4a5e;
+}
+
+/* Botón flotante */
+.whatsapp-float {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    background-color: #25d366;
+    color: #FFF;
+    border-radius: 50px;
+    text-align: center;
+    font-size: 24px;
+    line-height: 50px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-decoration: none;
+}

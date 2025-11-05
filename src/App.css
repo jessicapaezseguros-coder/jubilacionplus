@@ -1,0 +1,669 @@
+/* ========================================================================= */
+/* --- 1. GENERAL & PALETA --- */
+/* ========================================================================= */
+
+:root {
+    /* Paleta de Colores */
+    --color-primary: #A2D0C4;     
+    --color-primary-dark: #7DB5A9;
+    --color-secondary: #F4F8F4;   
+    
+    --color-accent: #BCA49A;      
+    --color-accent-soft: #F8EFEA; 
+    --color-warning: #D2E8D2;     
+    
+    --color-phone-background: #E8CAC1; 
+    --color-phone-text: #FFFFFF; 
+    
+    --color-background: #FFFFFF;  
+    --color-text: #454545;        
+    --color-light-text: #777777;  
+    --color-input-bg: #F8F8F8;    
+    --color-border: #E0E0E0;      
+    
+    /* Tipografía */
+    --font-stack: 'Poppins', 'Roboto', 'Segoe UI', Tahoma, sans-serif; 
+}
+
+/* Aplicación de Tipografía Moderna */
+body {
+    font-family: var(--font-stack);
+    background-color: var(--color-secondary); 
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.App {
+    width: 100%;
+    max-width: 1250px; 
+    background-color: var(--color-background);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
+    border-radius: 12px; 
+    margin: 30px 20px; 
+    padding-bottom: 20px; 
+}
+
+
+/* ========================================================================= */
+/* --- 2. HEADER Y LOGOTIPO --- */
+/* ========================================================================= */
+
+.app-header {
+    background-color: var(--color-primary); 
+    color: white;
+    text-align: center;
+    padding: 30px 20px 70px; 
+    position: relative;
+    background-image: linear-gradient(180deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.logo-container {
+    margin-bottom: 10px;
+}
+
+.logo-main-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1; 
+}
+
+/* J de impacto con brillo */
+.logo-j {
+    font-size: 4.2em; 
+    font-weight: 900; 
+    color: var(--color-accent); 
+    line-height: 1;
+    margin-right: 10px;
+    transform: translateY(-8px);
+    position: relative;
+    padding-right: 5px; 
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 
+                 0 0 25px rgba(255, 255, 255, 0.6); 
+}
+
+/* Ícono de flecha de crecimiento */
+.logo-j::before {
+    content: '▲'; 
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-30deg); 
+    font-size: 0.25em; 
+    color: rgba(255, 255, 255, 0.9); 
+    font-weight: 900;
+    text-shadow: none; 
+}
+
+/* Texto JUBILACIÓN */
+.logo-title {
+    font-size: 3.2em; 
+    font-weight: 700;
+    letter-spacing: 3px; 
+    color: rgba(255, 255, 255, 0.9); 
+}
+
+/* Plus en Verde Lima */
+.logo-plus {
+    font-size: 4.2em; 
+    font-weight: 800; 
+    color: var(--color-warning); 
+    line-height: 1;
+    margin-left: 10px;
+    transform: translateY(-8px);
+}
+
+.logo-name {
+    font-size: 1.4em; 
+    margin: 5px 0; 
+    font-weight: 700;
+    color: white;
+    letter-spacing: 2px;
+}
+
+.logo-subtitle {
+    font-size: 0.95em; 
+    margin-top: 0; 
+    margin-bottom: 0; 
+    opacity: 1; 
+    font-weight: 400;
+    color: white;
+    letter-spacing: 1px;
+}
+
+.tagline {
+    font-size: 1.1em; 
+    margin-top: 25px; 
+    margin-bottom: -40px; 
+    opacity: 0.95;
+    font-weight: 500;
+    letter-spacing: 1px;
+    position: relative; 
+    width: 100%;
+}
+
+/* ========================================================================= */
+/* --- 3. PESTAÑAS (Tus Datos Clave / Proyección) --- */
+/* ========================================================================= */
+
+.calculator-tabs-component {
+    padding: 30px; 
+    padding-top: 0; 
+}
+
+.header-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 25px;
+    margin-top: -15px; 
+}
+
+.tab-header {
+    background: none;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1.05em;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-light-text);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    border-radius: 6px 6px 0 0;
+    margin-top: 15px; 
+}
+
+.tab-header:not(.active):hover {
+    color: var(--color-primary-dark);
+    background-color: #F0F0F0;
+}
+
+.tab-header.active {
+    color: var(--color-accent); 
+    border-bottom: 3px solid var(--color-accent);
+    background-color: var(--color-background); 
+}
+
+/* ========================================================================= */
+/* --- 4. LAYOUT DE COLUMNAS (ADAPTATIVO Y CORREGIDO FINAL) --- */
+/* ========================================================================= */
+
+.panel-container {
+    display: flex;
+    gap: 30px; 
+    flex-wrap: nowrap; 
+    padding-bottom: 20px; 
+}
+
+.panel-left,
+.panel-right {
+    padding: 30px; 
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.panel-left {
+    background-color: var(--color-input-bg); 
+    border: 1px solid var(--color-border);
+}
+
+.panel-right {
+    padding: 0; 
+    background: none;
+    border: none;
+}
+
+/* --- CLASES DE PROPORCIONES ESPECÍFICAS --- */
+
+.col-layout-bps-custom .panel-left {
+    flex: 2; 
+    max-width: 60%; 
+}
+.col-layout-bps-custom .panel-right {
+    flex: 1; 
+    min-width: 380px; 
+    max-width: 40%;
+}
+
+.col-layout-caja-custom .panel-left {
+    flex: 3; 
+    max-width: 65%;
+}
+.col-layout-caja-custom .panel-right {
+    flex: 1; 
+    min-width: 380px; 
+    max-width: 35%;
+}
+
+.col-layout-proyeccion-custom .panel-left {
+    flex: 3; 
+    max-width: 70%;
+}
+.col-layout-proyeccion-custom .panel-right {
+    flex: 1; 
+    min-width: 280px; 
+    max-width: 30%;
+}
+
+/* ESTADO INICIAL DE PROYECCIÓN (Cuando no hay datos) */
+.proyeccion-initial-state {
+    padding: 50px;
+    text-align: center;
+    border: 2px dashed var(--color-border);
+    border-radius: 10px;
+    background-color: var(--color-secondary);
+}
+
+/* MEDIA QUERY: Apilamiento en Móvil */
+@media (max-width: 900px) {
+    .panel-container {
+        flex-wrap: wrap; 
+    }
+    .col-layout-bps-custom .panel-left,
+    .col-layout-bps-custom .panel-right,
+    .col-layout-caja-custom .panel-left,
+    .col-layout-caja-custom .panel-right,
+    .col-layout-proyeccion-custom .panel-left,
+    .col-layout-proyeccion-custom .panel-right {
+        min-width: 100%;
+        flex: 1 1 100%; 
+        padding: 20px; 
+        max-width: 100%; 
+    }
+    .panel-right {
+        padding: 20px;
+        background-color: transparent !important;
+        border: none !important;
+    }
+}
+
+
+/* ========================================================================= */
+/* --- 5. FOOTER (Centrado) --- */
+/* ========================================================================= */
+
+.app-footer {
+    text-align: center; 
+    font-size: 0.85em;
+    color: var(--color-light-text);
+    margin-top: 30px; 
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+    width: 100%;
+    box-sizing: border-box;
+    display: block; 
+}
+
+/* ========================================================================= */
+/* --- 6. ESTILOS DE FORMULARIO Y WIDGETS --- */
+/* ========================================================================= */
+
+.datos-clave-title {
+    color: var(--color-text); 
+    font-size: 1.3em;
+    margin-bottom: 20px;
+    font-weight: 700; 
+}
+
+/* Botones BPS / CAJA */
+.caja-selector {
+    display: flex;
+    gap: 10px; 
+    margin-bottom: 25px;
+    padding: 5px; 
+    background-color: white; 
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); 
+}
+.caja-button {
+    flex: 1; 
+    padding: 10px 15px;
+    font-size: 0.95em; 
+    font-weight: 600;
+    cursor: pointer;
+    border: none; 
+    color: var(--color-light-text);
+    background-color: transparent;
+    transition: all 0.3s ease;
+    border-radius: 8px; 
+}
+.caja-button:hover:not(.active) {
+    color: var(--color-primary-dark);
+}
+.caja-button.active {
+    background-color: var(--color-primary-dark); 
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Inputs de Texto y Selects */
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+.form-group.half {
+    flex: 1;
+    min-width: 0; 
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--color-text);
+    text-align: left; 
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px; 
+    border: 1px solid var(--color-border);
+    background-color: white; 
+    color: var(--color-text); 
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); 
+    display: block; 
+    font-weight: 500;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus {
+    border-color: var(--color-primary-dark);
+    box-shadow: 0 0 0 3px rgba(162, 208, 196, 0.5); 
+    outline: none;
+}
+
+/* Input de solo lectura (Aporte Base) */
+.form-group input[type="text"][readOnly] {
+    background-color: var(--color-primary-dark); 
+    color: white; 
+    font-weight: 700;
+    border: 1px solid var(--color-primary-dark);
+    box-shadow: none;
+    font-size: 1.1em;
+    padding: 10px 12px;
+}
+
+.info-text {
+    display: block;
+    font-size: 0.85em;
+    color: var(--color-light-text);
+    margin-top: 5px;
+}
+
+/* Botones de Aporte (CAJA - 3 COLUMNAS) */
+.grid-3-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px; 
+}
+
+.aporte-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    border-radius: 12px; 
+    font-size: 0.9em; 
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid var(--color-border); 
+    background-color: white;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); 
+}
+
+.aporte-button span {
+    font-weight: 700;
+    font-size: 1.05em; 
+    margin-top: 8px;
+    color: var(--color-accent); 
+}
+
+.aporte-button.active {
+    background-color: var(--color-primary); 
+    border-color: var(--color-primary-dark);
+    color: white; 
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); 
+    transform: translateY(-2px);
+}
+.aporte-button.active span {
+    color: white; 
+}
+
+/* Nota de Aviso */
+.aviso-final-note {
+    font-size: 0.85em;
+    color: var(--color-text); 
+    font-weight: 500;
+    padding: 15px;
+    background-color: var(--color-accent-soft); 
+    border-left: 4px solid var(--color-accent); 
+    border-radius: 4px;
+    margin-top: 25px;
+}
+
+/* Botón Calcular Proyección */
+.calculate-button {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.25em;
+    font-weight: 700;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-primary-dark); 
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    margin-top: 25px;
+    box-shadow: 0 4px 15px rgba(125, 181, 169, 0.4);
+}
+
+.calculate-button:hover {
+    background-color: #699B8E; 
+    box-shadow: 0 6px 20px rgba(125, 181, 169, 0.6);
+}
+
+/* Resultados y Análisis */
+.results-card {
+    background-color: var(--color-background);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 25px;
+    border: 1px solid var(--color-border);
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--color-border);
+}
+
+.result-value-nowrap {
+    font-weight: 800;
+    font-size: 1.2em;
+    color: var(--color-primary-dark);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.analysis-card {
+    background-color: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--color-accent);
+}
+.analysis-card h4 {
+    font-size: 1.2em;
+    color: var(--color-accent);
+    margin-top: 0;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+}
+
+.ia-badge {
+    font-size: 0.7em; 
+    font-weight: 700;
+    color: white;
+    background-color: #BCA49A; 
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 10px;
+}
+
+.analysis-card ol {
+    list-style: none;
+    padding-left: 0;
+}
+.analysis-card ol li {
+    margin-bottom: 15px;
+    font-size: 0.95em;
+    line-height: 1.5; 
+}
+
+/* ========================================================================= */
+/* --- 7. ASESOR CARD (AJUSTADO PARA ESPACIO) --- */
+/* ========================================================================= */
+
+.asesor-card {
+    background-image: linear-gradient(145deg, var(--color-primary-dark) 0%, #6a9b8e 100%); 
+    padding: 25px; 
+    border-radius: 12px; 
+    color: white;
+    text-align: center;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25), 
+                0 5px 10px rgba(0, 0, 0, 0.1); 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Contenedor del Logo/Nombre */
+.asesor-logo-text {
+    background-image: linear-gradient(180deg, var(--color-primary) 0%, #8ac7b9 100%); 
+    padding: 15px 15px; /* Reducción de padding vertical */
+    border-radius: 10px; 
+    margin: 20px 0; /* Reducción de margen vertical */
+    display: flex;
+    flex-direction: column;
+    gap: 0; 
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.15); 
+}
+
+/* JUBILACIÓN+ */
+.logo-line-1 { 
+    font-weight: 700; 
+    font-size: 1.05em; 
+    color: rgba(255, 255, 255, 0.9); 
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* ANTicipate */
+.logo-line-anticipate {
+    font-weight: 900; 
+    font-size: 1.3em; 
+    color: var(--color-accent-soft); 
+    text-transform: uppercase;
+    letter-spacing: 4px; 
+    margin-bottom: 10px; 
+    margin-top: -5px;
+    line-height: 1.1;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
+}
+
+/* LIC. */
+.logo-line-2-lic {
+    font-size: 0.8em; 
+    font-weight: 400; 
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+}
+
+/* JESSICA PAEZ (Audaz y Ajustado) */
+.logo-line-2-name { 
+    font-weight: 900; 
+    font-size: 2.2em; 
+    color: white; 
+    letter-spacing: 3px; 
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); 
+    margin-top: 5px; 
+    margin-bottom: 15px; 
+    line-height: 1;
+}
+
+/* Asesora Técnica en Seguros Personales */
+.logo-line-3 {
+    font-size: 0.75em; 
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9); 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+/* Teléfono */
+.logo-line-4 { 
+    font-weight: 900; 
+    font-size: 1.8em; 
+    color: var(--color-text); 
+    background-color: var(--color-accent-soft); 
+    border-radius: 6px; 
+    padding: 6px 0; 
+    margin-top: 15px; 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+    letter-spacing: 1px;
+}
+
+/* Botón de WhatsApp */
+.whatsapp-button {
+    display: block;
+    background-image: linear-gradient(180deg, var(--color-warning) 0%, #a4cd9a 100%); 
+    color: var(--color-text);
+    padding: 18px; 
+    border-radius: 10px; 
+    text-decoration: none;
+    font-weight: 700;
+    margin-top: 25px; 
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease; 
+    box-shadow: 0 8px 20px rgba(210, 232, 210, 0.6); 
+    font-size: 1.2em; 
+    letter-spacing: 0.5px;
+}
+
+.whatsapp-button:hover {
+    background-image: linear-gradient(180deg, #c0d8c0 0%, #8ebf81 100%); 
+    transform: translateY(-3px); 
+    box-shadow: 0 12px 25px rgba(210, 232, 210, 0.8); 
+}
+
+.disclaimer {
+    font-size: 0.8em; 
+    margin-top: 25px; 
+    opacity: 0.8;
+    color: rgba(255, 255, 255, 0.7); 
+}
