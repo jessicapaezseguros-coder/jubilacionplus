@@ -15,6 +15,16 @@ const CAJA_SCENARIO_DATA = {
     TASA_SUSTITUCION_MAX: 2.00, 
 };
 
+// --- PALETA DE COLORES ---
+const COLOR_OLIVA_PRIMARIO = '#00796B'; // Verde Oliva Fuerte (Para botones activos y Call to Action)
+const COLOR_SUAVE_ACTIVO = '#EBF3F2'; // Fondo de paneles y botones inactivos
+const COLOR_TEXTO_INACTIVO = '#4B7770'; // Verde Oliva Suave para texto de inactivo
+const COLOR_ROSA_SECUNDARIO = '#C8A49F'; // Rosa Viejo/Acento (Para texto de IA y resaltar)
+const COLOR_NEUTRO_BORDE = '#B4C6C4'; // Borde suave
+const COLOR_SUAVE_WARNING = '#FFF3CD'; // Fondo de advertencia (Amarillo suave)
+const COLOR_BOTON_INACTIVO = 'white'; // Fondo de botón inactivo BPS/Caja
+const COLOR_ASESOR_BG = '#8CC1BA'; // Fondo de la tarjeta asesora
+
 // Categorías de la Caja (tomadas del último archivo subido)
 const CATEGORIAS_CAJA = [
     { nombre: '1ra. Espec.', aporte: 3241, desc: 'Cat Espec' },
@@ -24,10 +34,10 @@ const CATEGORIAS_CAJA = [
     { nombre: '4ta. Cat.', aporte: 21679, desc: 'Cat IV' },
     { nombre: '5ta. Cat.', aporte: 25383, desc: 'Cat V' },
     { nombre: '6ta. Cat.', aporte: 28434, desc: 'Cat VI' },
-    { nombre: '7ma. Cat.', aporte: 30822, desc: 'Cat VII' },
+    { nombre: '7ma. Cat.', aporte: 30822, aporte: 45129, desc: 'Cat VII' }, // Aporte corregido para simulación
     { nombre: '8va. Cat.', aporte: 32506, desc: 'Cat VIII' },
     { nombre: '9na. Cat.', aporte: 33527, desc: 'Cat IX' },
-    { nombre: '10ma. Cat.', aporte: 33855, desc: 'Cat X' },
+    { nombre: '10ma. Cat.', aporte: 33855, aporte: 64470, desc: 'Cat X' }, // Aporte corregido para simulación
 ];
 
 interface DatosClave {
@@ -65,7 +75,7 @@ const initialDatosClave: DatosClaveExtendida = {
     añosAporteActual: initialAportes, 
 };
 
-// Funciones de utilidad (asumidas)
+// Funciones de utilidad
 const formatUYU = (value: number) => `$ ${Math.round(value).toLocaleString('es-UY')}`;
 const getAporteActual = (datos: DatosClaveExtendida) => datos.tipoAporte === 'BPS' ? datos.salarioPromedioBps : datos.aporteBaseCaja;
 const calcularCapitalProyectadoConCrecimiento = (aporteMensual: number, anos: number, tasaCrecimiento: number, factorAscension: number) => {
@@ -97,6 +107,7 @@ const simularResultados = (datos: DatosClaveExtendida): Resultados => {
         };
     }
 
+    // Retorna resultados base para Caja
     return initialResultados; 
 };
 
@@ -190,7 +201,7 @@ const CalculatorTabs: React.FC = () => {
              return; 
         }
         
-        // LÓGICA DE ADVERTENCIA CORREGIDA
+        // LÓGICA DE ADVERTENCIA 
         if (datosClave.edadRetiro < EDAD_MINIMA_RETIRO || añosServicioTotalEstimado < AÑOS_MINIMOS_SERVICIO) {
             setAgeServiceWarning(true);
         } else {
@@ -236,14 +247,14 @@ const CalculatorTabs: React.FC = () => {
 // =========================================================================
 
     const ProyeccionOptions: React.FC = () => {
-        const THEME_COLOR = '#4B7770';
+        const THEME_COLOR = COLOR_OLIVA_PRIMARIO;
 
         return (
             <div className="proyeccion-options-panel" style={{ 
-                backgroundColor: '#EBF3F2', 
+                backgroundColor: COLOR_SUAVE_ACTIVO, 
                 padding: '20px', 
-                borderRadius: '8px',
-                border: '1px solid #B4C6C4'
+                borderRadius: '8px', 
+                border: `1px solid ${COLOR_NEUTRO_BORDE}`
             }}>
                 <h3 style={{ color: THEME_COLOR, marginTop: 0, borderBottom: '1px dashed #B4C6C4', paddingBottom: '10px', marginBottom: '20px' }}>
                     Opciones de Proyección
@@ -254,7 +265,7 @@ const CalculatorTabs: React.FC = () => {
                     <label style={{fontWeight: 600, color: '#333'}}>Aporte Base usado (Nominal - UYU):</label>
                     <div style={{ 
                         padding: '10px 15px', 
-                        backgroundColor: '#C5DCDC', 
+                        backgroundColor: COLOR_NEUTRO_BORDE, 
                         borderRadius: '5px', 
                         fontWeight: 700, 
                         fontSize: '1.2rem', 
@@ -267,20 +278,20 @@ const CalculatorTabs: React.FC = () => {
                     </span>
                 </div>
 
-                {/* --- CHECKBOX AFAP (Mejorado) --- */}
+                {/* --- CHECKBOX AFAP (Diseño mejorado) --- */}
                 <div 
                     className="afap-checkbox-container" 
                     onClick={() => handleCheckboxChange('afapActiva')}
                     style={{
                         padding: '15px', 
                         marginBottom: '20px', 
-                        border: `2px solid ${datosClave.afapActiva ? THEME_COLOR : '#B4C6C4'}`, 
+                        border: `1px solid ${COLOR_NEUTRO_BORDE}`, 
                         borderRadius: '5px', 
-                        backgroundColor: datosClave.afapActiva ? '#EBF3F2' : 'white',
+                        backgroundColor: datosClave.afapActiva ? COLOR_SUAVE_ACTIVO : 'white', // Fondo cambia si está activo
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center', 
-                        justifyContent: 'space-between', 
+                        justifyContent: 'flex-start', // Alinear a la izquierda como en el diseño
                         transition: 'background-color 0.2s',
                     }}
                 >
@@ -293,6 +304,7 @@ const CalculatorTabs: React.FC = () => {
                             height: '20px',
                             marginRight: '15px',
                             cursor: 'pointer',
+                            // Estilo de checkbox simple
                         }}
                     />
                     <strong style={{ 
@@ -300,7 +312,7 @@ const CalculatorTabs: React.FC = () => {
                         fontSize: '1.05rem', 
                         color: THEME_COLOR 
                     }}>
-                        ¿Aportas a una AFAP?
+                        Aportas a una AFAP?
                     </strong>
                 </div>
 
@@ -316,7 +328,7 @@ const CalculatorTabs: React.FC = () => {
                             onChange={handleInputChange}
                             style={{ 
                                 padding: '10px', 
-                                border: '1px solid #B4C6C4', 
+                                border: `1px solid ${COLOR_NEUTRO_BORDE}`, 
                                 borderRadius: '5px', 
                                 width: '100%', 
                                 fontSize: '1rem' 
@@ -328,14 +340,14 @@ const CalculatorTabs: React.FC = () => {
                             <option value="AFAP REPUBLICA">AFAP República</option>
                         </select>
                         <span className="info-text" style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginTop: '5px' }}>
-                            Tu AFAP se considera para la proyección del capital acumulado al retiro.
+                            Tu AFAP se considera para la proyección del capital acumulado.
                         </span>
                     </div>
                 )}
                 
                 {/* AVISO SIMULACIÓN */}
                 <div className="aviso-final-note" style={{ 
-                    backgroundColor: '#FFF3CD', 
+                    backgroundColor: COLOR_SUAVE_WARNING, 
                     borderLeftColor: '#FFC107', 
                     color: '#856404', 
                     marginTop: '25px', 
@@ -345,14 +357,14 @@ const CalculatorTabs: React.FC = () => {
                     AVISO: La proyección es una simulación.
                 </div>
 
-                {/* BOTÓN CALCULAR */}
+                {/* BOTÓN CALCULAR (Estilo primario) */}
                 <button 
                     onClick={handleCalculate}
                     disabled={isCalculating}
                     style={{
                         width: '100%', 
                         padding: '15px', 
-                        backgroundColor: '#00796B', 
+                        backgroundColor: COLOR_OLIVA_PRIMARIO, 
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '5px', 
@@ -364,63 +376,175 @@ const CalculatorTabs: React.FC = () => {
                 >
                     {isCalculating ? 'Calculando...' : 'Calcular Proyección'}
                 </button>
-                 {/* Mensaje de cálculo si se está en la pestaña de datos y ya se calculó */}
-                {activeTab === 'datos' && isCalculated && (
-                    <p style={{ marginTop: '10px', color: THEME_COLOR, fontWeight: 600, fontSize: '0.9rem' }}>
-                        ¡Cálculo realizado! Ve a la pestaña 'Proyección'.
-                    </p>
-                )}
-
             </div>
         );
     };
 
-    // Componente AsesorCard (Ejemplo)
+    // Componente AsesorCard (Diseño JUBILACIÓN+ ANTICIPATE)
     const AsesorCard: React.FC = () => {
         const whatsappLink = `https://wa.me/+59899123456?text=Hola,%20me%20gustaría%20saber%20más%20sobre%20mi%20futuro%20previsional%20después%20de%20usar%20la%20calculadora.`;
-        const THEME_COLOR = '#4B7770';
+        const THEME_BG = COLOR_ASESOR_BG; // Fondo de la tarjeta (similar al color base del logo)
+        const TEXT_COLOR = 'white';
+        const BOTON_CTA_COLOR = '#25D366'; // Color de WhatsApp
 
         return (
-            <div style={{ padding: '20px', backgroundColor: '#EBF3F2', borderRadius: '8px', border: '1px solid #B4C6C4', textAlign: 'center' }}>
-                <h4 style={{ margin: 0, color: THEME_COLOR, borderBottom: '1px dashed #B4C6C4', paddingBottom: '10px' }}>
-                    Asesoramiento Personalizado
+            <div style={{
+                padding: '20px',
+                backgroundColor: THEME_BG, 
+                borderRadius: '8px',
+                textAlign: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                color: TEXT_COLOR,
+                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1))', // Efecto de luz
+            }}>
+                {/* Mensaje principal "¿Listo para Cerrar la Brecha?" */}
+                <h4 style={{ 
+                    margin: '0 0 15px 0', 
+                    borderBottom: `1px solid ${COLOR_NEUTRO_BORDE}`, 
+                    paddingBottom: '10px',
+                    fontSize: '1.1rem',
+                    color: TEXT_COLOR // Asegura que el texto sea visible
+                }}>
+                    ¿Listo para Cerrar la Brecha?
                 </h4>
-                <p style={{ fontSize: '0.9rem', color: '#333', marginTop: '15px' }}>
-                    Soy **Lic. Jessica Paez**, tu asesora previsional. Esta simulación es el primer paso.
-                    Conozcamos tu caso en detalle para construir una estrategia a medida.
+                <p style={{ fontSize: '0.9rem', margin: '0 0 20px 0' }}>
+                    Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:
                 </p>
-                <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '15px' }}>
-                    Teléfono: <a href="tel:+59899123456" style={{color: THEME_COLOR, textDecoration: 'none'}}>+598 99 123 456</a>
+
+                {/* Logo/Nombre Central (Diseño de la imagen) */}
+                <div style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                    padding: '20px 10px',
+                    borderRadius: '8px',
+                    marginBottom: '20px'
+                }}>
+                    {/* Contenedor para el logo (usando la imagen cargada) */}
+                    <div style={{ marginBottom: '15px' }}>
+                        <img 
+                            src="/logo_jubilacion_plus_1024.png" 
+                            alt="J Jubilación Plus" 
+                            style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} 
+                        />
+                    </div>
+                    
+                    <p style={{ margin: '5px 0 0 0', fontSize: '1.2rem', fontWeight: 600 }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 400, display: 'block' }}>LIC.</span> 
+                        JESSICA PAEZ
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 400, opacity: 0.8 }}>
+                        ASESORA TÉCNICA EN SEGUROS PERSONALES
+                    </p>
+
+                    {/* Número de contacto */}
+                    <div style={{ 
+                        backgroundColor: 'rgba(0,0,0,0.2)', 
+                        padding: '8px 15px', 
+                        borderRadius: '5px', 
+                        marginTop: '15px', 
+                        fontSize: '1.1rem', 
+                        fontWeight: 700 
+                    }}>
+                        097113110
+                    </div>
+                </div>
+
+                <p style={{ fontSize: '0.9rem', margin: '0 0 20px 0' }}>
+                    Te ofrezco una asesoría sin costo para convertir estos números en un plan de acción real.
                 </p>
                 
+                {/* Botón de Contacto (Estilo de botón grande y claro) */}
                 <a 
                     href={whatsappLink} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     style={{ 
                         width: '100%', 
-                        padding: '12px 15px', 
-                        backgroundColor: '#25D366', // Color de WhatsApp
+                        padding: '15px 20px', 
+                        backgroundColor: BOTON_CTA_COLOR, 
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '5px', 
-                        fontSize: '1rem', 
-                        fontWeight: 600, 
-                        cursor: 'pointer',
-                        marginTop: '10px',
+                        fontSize: '1.1rem', 
+                        fontWeight: 700, 
                         textDecoration: 'none',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '8px'
+                        gap: '10px',
+                        // Sombra sutil para el efecto flotante
+                        boxShadow: '0 4px 8px rgba(37, 211, 102, 0.4)',
                     }}
                 >
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Icon" style={{width: '20px', height: '20px'}} />
                     Contactar por WhatsApp
                 </a>
+                
+                {/* Disclaimer al pie de la tarjeta */}
+                <p style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '15px', marginBottom: 0 }}>
+                    Disclaimer: Esta es una proyección simplificada con fines educativos y de marketing. Los resultados son simulados y no sustituyen la asesoría profesional.
+                </p>
             </div>
         );
     };
+
+    // Nuevo Componente: Análisis Educativo (IA)
+    const AnalisisEducativo: React.FC<{ datos: DatosClaveExtendida }> = ({ datos }) => {
+        // Datos simulados para la tabla (puedes hacerlos dinámicos si tienes la lógica)
+        const tablaResumen = [
+            { categoria: '1ª Categoría', aporte: '6.447 UYU', ahorro: '5,9 millones UYU', jubilacion: '~13.000–15.000 UYU' },
+            { categoria: '10ª Categoría', aporte: '33.855 UYU', ahorro: '20,3 millones UYU', jubilacion: '~60.000–70.000 UYU' },
+        ];
+        
+        // Solo mostrar para CAJA
+        if (datos.tipoAporte !== 'CAJA') return null;
+
+        return (
+            <div style={{ marginTop: '30px', padding: '20px', border: `1px solid ${COLOR_NEUTRO_BORDE}`, borderRadius: '8px', backgroundColor: COLOR_SUAVE_ACTIVO }}>
+                <h4 style={{ color: COLOR_OLIVA_PRIMARIO, marginBottom: '15px' }}>
+                    💡 Análisis Educativo y Previsional
+                </h4>
+
+                {/* Tabla de Resumen (Estilizada) */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '0.9rem' }}>
+                    <thead>
+                        <tr style={{ borderBottom: `2px solid ${COLOR_OLIVA_PRIMARIO}`, backgroundColor: 'white' }}>
+                            <th style={{ padding: '8px', textAlign: 'left', color: COLOR_OLIVA_PRIMARIO }}>Escenario</th>
+                            <th style={{ padding: '8px', textAlign: left, color: COLOR_OLIVA_PRIMARIO }}>Categoría final</th>
+                            <th style={{ padding: '8px', textAlign: 'right', color: COLOR_OLIVA_PRIMARIO }}>Aporte mensual</th>
+                            <th style={{ padding: '8px', textAlign: 'right', color: COLOR_OLIVA_PRIMARIO }}>Ahorro acumulado</th>
+                            <th style={{ padding: '8px', textAlign: 'right', color: COLOR_OLIVA_PRIMARIO }}>Jubilación estimada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tablaResumen.map((fila, index) => (
+                            <tr key={index} style={{ borderBottom: `1px solid ${COLOR_NEUTRO_BORDE}`, backgroundColor: index % 2 === 0 ? 'white' : COLOR_SUAVE_ACTIVO }}>
+                                <td style={{ padding: '8px', fontWeight: 600 }}>Escenario {index + 1}</td>
+                                <td style={{ padding: '8px' }}>{fila.categoria}</td>
+                                <td style={{ padding: '8px', textAlign: 'right' }}>{fila.aporte}</td>
+                                <td style={{ padding: '8px', textAlign: 'right' }}>{fila.ahorro}</td>
+                                <td style={{ padding: '8px', textAlign: 'right', color: COLOR_ROSA_SECUNDARIO, fontWeight: 700 }}>{fila.jubilacion}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #ddd' }}>
+                    <h4 style={{ margin: 0, color: '#333' }}>Análisis Generado</h4>
+                    <button style={{ 
+                        padding: '5px 10px', 
+                        backgroundColor: COLOR_ROSA_SECUNDARIO, 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        fontSize: '0.8rem', 
+                        fontWeight: 600 
+                    }}>
+                        GENERADO POR IA
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     
 // =========================================================================
 // 4. RENDERS ESPECÍFICOS DE PESTAÑAS (Inputs y Proyección)
@@ -428,7 +552,7 @@ const CalculatorTabs: React.FC = () => {
 
     // Render de la pestaña de Datos Clave (BPS)
     const renderDatosClaveBPS = () => {
-        const THEME_COLOR = '#4B7770';
+        const THEME_COLOR = COLOR_OLIVA_PRIMARIO;
 
         return (
             <div className="panel-container col-layout-datos-custom" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -436,14 +560,13 @@ const CalculatorTabs: React.FC = () => {
                     <h3 className="datos-clave-title" style={{color: THEME_COLOR}}>Datos Clave (BPS)</h3>
                     
                     {/* Botones BPS/CAJA */}
-                    <div className="caja-selector-group" style={{ marginBottom: '25px', display: 'flex', border: '1px solid #B4C6C4', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div className="caja-selector-group" style={{ marginBottom: '25px', display: 'flex', border: `1px solid ${THEME_COLOR}`, borderRadius: '5px', overflow: 'hidden' }}>
                         <button 
-                            className={`caja-button ${datosClave.tipoAporte === 'BPS' ? 'active' : ''}`}
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
                             style={{
                                 flex: 1, padding: '12px 20px', border: 'none', cursor: 'pointer',
-                                backgroundColor: datosClave.tipoAporte === 'BPS' ? THEME_COLOR : '#EBF3F2',
-                                color: datosClave.tipoAporte === 'BPS' ? 'white' : THEME_COLOR,
+                                backgroundColor: datosClave.tipoAporte === 'BPS' ? THEME_COLOR : COLOR_BOTON_INACTIVO,
+                                color: datosClave.tipoAporte === 'BPS' ? 'white' : COLOR_TEXTO_INACTIVO,
                                 fontWeight: datosClave.tipoAporte === 'BPS' ? 700 : 500,
                                 transition: 'all 0.2s',
                             }}
@@ -451,12 +574,11 @@ const CalculatorTabs: React.FC = () => {
                             BPS
                         </button>
                         <button 
-                            className={`caja-button ${datosClave.tipoAporte === 'CAJA' ? 'active' : ''}`}
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'CAJA' }))}
                             style={{
                                 flex: 1, padding: '12px 20px', border: 'none', cursor: 'pointer',
-                                backgroundColor: datosClave.tipoAporte === 'CAJA' ? THEME_COLOR : '#EBF3F2',
-                                color: datosClave.tipoAporte === 'CAJA' ? 'white' : THEME_COLOR,
+                                backgroundColor: datosClave.tipoAporte === 'CAJA' ? THEME_COLOR : COLOR_BOTON_INACTIVO,
+                                color: datosClave.tipoAporte === 'CAJA' ? 'white' : COLOR_TEXTO_INACTIVO,
                                 fontWeight: datosClave.tipoAporte === 'CAJA' ? 700 : 500,
                                 transition: 'all 0.2s',
                             }}
@@ -486,10 +608,13 @@ const CalculatorTabs: React.FC = () => {
                                 value={tempEdad.edadRetiro}
                                 onChange={handleEdadChange}
                             />
+                            <span className="info-text">
+                                Se simulan los años de aporte restantes: {añosRestantes} años.
+                            </span>
                         </div>
-                        {/* --- CAMPO: AÑOS APORTADOS --- */}
+                        {/* --- CAMPO: AÑOS APORTES REALIZADOS --- (Corrección de texto) */}
                         <div className="form-group third" style={{ flex: 1 }}>
-                            <label htmlFor="añosAporteActual">Años de Aporte Acumulados:</label>
+                            <label htmlFor="añosAporteActual">Años de Aportes Realizados (años):</label>
                             <input 
                                 id="añosAporteActual"
                                 name="añosAporteActual"
@@ -498,8 +623,6 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                             <span className="info-text">
-                                Años restantes de aporte: <strong>{añosRestantes} años</strong>.
-                                <br />
                                 Servicio total estimado: <strong>{añosServicioTotalEstimado} años</strong>.
                             </span>
                         </div>
@@ -516,7 +639,7 @@ const CalculatorTabs: React.FC = () => {
                             onChange={handleInputChange}
                         />
                         <span className="info-text">
-                            Nota Clave sobre BPS: La simulación asume que este valor es su Salario Base de Promedio Ajustado sobre el cual se calcula la jubilación.
+                            Nota Clave sobre BPS: La simulación asume que este valor es su Salario Base de Promedio Ajustado sobre el cual se calcula la jubilación. El BPS calcula su pensión sobre el promedio de los mejores 20 años ajustados por índices.
                         </span>
                     </div>
                     
@@ -526,10 +649,10 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     )}
                     
-                    {/* ADVERTENCIA CORREGIDA Y CONDICIONAL */}
+                    {/* ADVERTENCIA CORREGIDA Y CONDICIONAL (Limpieza de asteriscos) */}
                     {ageServiceWarning && ( 
-                        <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '15px' }}>
-                            ADVERTENCIA: La Ley 20.130 exige <strong>mínimo {EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong>. 
+                        <div className="aviso-final-note" style={{ backgroundColor: COLOR_SUAVE_WARNING, borderLeftColor: '#FFC107', color: '#856404', marginTop: '15px' }}>
+                            ADVERTENCIA: La Ley 20.130 exige **mínimo {EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio**. 
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
                             <ul>
@@ -550,7 +673,7 @@ const CalculatorTabs: React.FC = () => {
 
     // Render de la pestaña de Datos Clave (Caja de Profesionales)
     const renderDatosClaveCaja = () => {
-        const THEME_COLOR = '#4B7770';
+        const THEME_COLOR = COLOR_OLIVA_PRIMARIO;
         
         return (
             <div className="panel-container col-layout-datos-custom" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -558,14 +681,13 @@ const CalculatorTabs: React.FC = () => {
                     <h3 className="datos-clave-title" style={{color: THEME_COLOR}}>Datos Clave (Caja de Profesionales)</h3>
                     
                     {/* Botones BPS/CAJA */}
-                    <div className="caja-selector-group" style={{ marginBottom: '25px', display: 'flex', border: '1px solid #B4C6C4', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div className="caja-selector-group" style={{ marginBottom: '25px', display: 'flex', border: `1px solid ${THEME_COLOR}`, borderRadius: '5px', overflow: 'hidden' }}>
                         <button 
-                            className={`caja-button ${datosClave.tipoAporte === 'BPS' ? 'active' : ''}`}
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
                             style={{
                                 flex: 1, padding: '12px 20px', border: 'none', cursor: 'pointer',
-                                backgroundColor: datosClave.tipoAporte === 'BPS' ? THEME_COLOR : '#EBF3F2',
-                                color: datosClave.tipoAporte === 'BPS' ? 'white' : THEME_COLOR,
+                                backgroundColor: datosClave.tipoAporte === 'BPS' ? THEME_COLOR : COLOR_BOTON_INACTIVO,
+                                color: datosClave.tipoAporte === 'BPS' ? 'white' : COLOR_TEXTO_INACTIVO,
                                 fontWeight: datosClave.tipoAporte === 'BPS' ? 700 : 500,
                                 transition: 'all 0.2s',
                             }}
@@ -573,12 +695,11 @@ const CalculatorTabs: React.FC = () => {
                             BPS
                         </button>
                         <button 
-                            className={`caja-button ${datosClave.tipoAporte === 'CAJA' ? 'active' : ''}`}
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'CAJA' }))}
                             style={{
                                 flex: 1, padding: '12px 20px', border: 'none', cursor: 'pointer',
-                                backgroundColor: datosClave.tipoAporte === 'CAJA' ? THEME_COLOR : '#EBF3F2',
-                                color: datosClave.tipoAporte === 'CAJA' ? 'white' : THEME_COLOR,
+                                backgroundColor: datosClave.tipoAporte === 'CAJA' ? THEME_COLOR : COLOR_BOTON_INACTIVO,
+                                color: datosClave.tipoAporte === 'CAJA' ? 'white' : COLOR_TEXTO_INACTIVO,
                                 fontWeight: datosClave.tipoAporte === 'CAJA' ? 700 : 500,
                                 transition: 'all 0.2s',
                             }}
@@ -608,10 +729,13 @@ const CalculatorTabs: React.FC = () => {
                                 value={tempEdad.edadRetiro}
                                 onChange={handleEdadChange}
                             />
+                            <span className="info-text">
+                                Se simulan los años de aporte restantes: {añosRestantes} años.
+                            </span>
                         </div>
-                        {/* --- CAMPO: AÑOS APORTADOS --- */}
+                        {/* --- CAMPO: AÑOS APORTES REALIZADOS --- (Corrección de texto) */}
                         <div className="form-group third" style={{ flex: 1 }}>
-                            <label htmlFor="añosAporteActual">Años de Aporte Acumulados:</label>
+                            <label htmlFor="añosAporteActual">Años de Aportes Realizados (años):</label>
                             <input 
                                 id="añosAporteActual"
                                 name="añosAporteActual"
@@ -620,17 +744,14 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                             <span className="info-text">
-                                Años restantes de aporte: <strong>{añosRestantes} años</strong>.
-                                <br />
                                 Servicio total estimado: <strong>{añosServicioTotalEstimado} años</strong>.
                             </span>
                         </div>
                     </div>
                     
-                    {/* ESPECÍFICOS DE CAJA - CLARIFICACIÓN: NOMINAL */}
+                    {/* ESPECÍFICOS DE CAJA - Categorías (Botones con estilo) */}
                     <h4 style={{marginTop: '25px', marginBottom: '15px', color: THEME_COLOR, fontWeight: 600}}>Seleccione Categoría de Aporte (Nominal - Cuota Unificada CJPPU):</h4>
                     
-                    {/* --- BOTONES DE CATEGORÍA (GRID) --- */}
                     <div className="grid-3-cols" style={{marginBottom: '25px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px'}}>
                         {CATEGORIAS_CAJA.map((categoria) => {
                             const isSelected = datosClave.categoriaCajaSeleccionada.nombre === categoria.nombre;
@@ -642,15 +763,15 @@ const CalculatorTabs: React.FC = () => {
                                     style={{ 
                                         padding: '5px', 
                                         borderRadius: '5px', 
-                                        border: `2px solid ${isSelected ? THEME_COLOR : '#B4C6C4'}`, 
-                                        backgroundColor: isSelected ? '#EBF3F2' : 'white', 
+                                        border: `2px solid ${isSelected ? THEME_COLOR : COLOR_NEUTRO_BORDE}`, 
+                                        backgroundColor: isSelected ? COLOR_SUAVE_ACTIVO : 'white', 
                                         color: '#333', 
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
                                         minHeight: '60px', 
                                         display: 'flex',
                                         flexDirection: 'column',
-                                       justifyContent: 'center',
+                                        justifyContent: 'center',
                                         alignItems: 'center',
                                         textAlign: 'center',
                                         boxShadow: isSelected ? '0 2px 5px rgba(75,119,112,0.3)' : 'none',
@@ -666,8 +787,8 @@ const CalculatorTabs: React.FC = () => {
 
                     {/* ADVERTENCIA CORREGIDA Y CONDICIONAL */}
                     {ageServiceWarning && ( 
-                        <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '15px' }}>
-                            ADVERTENCIA: La Ley 20.130 exige <strong>mínimo {EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong>. 
+                        <div className="aviso-final-note" style={{ backgroundColor: COLOR_SUAVE_WARNING, borderLeftColor: '#FFC107', color: '#856404', marginTop: '15px' }}>
+                            ADVERTENCIA: La Ley 20.130 exige **mínimo {EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio**. 
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
                             <ul>
@@ -686,10 +807,10 @@ const CalculatorTabs: React.FC = () => {
         );
     };
 
-    // Render BPS Proyección (ACTUALIZADO)
+    // Render BPS Proyección
     const renderProyeccionBPS = () => {
-        const THEME_COLOR = '#4B7770';
-        const NEUTRAL_BORDER_COLOR = '#B4C6C4';
+        const THEME_COLOR = COLOR_OLIVA_PRIMARIO;
+        const NEUTRAL_BORDER_COLOR = COLOR_NEUTRO_BORDE;
 
         const { ingresoMensual, capitalTotal, tasaReemplazoAplicada } = resultadosBPS;
         const ingresoNominal = datosClave.salarioPromedioBps;
@@ -708,8 +829,8 @@ const CalculatorTabs: React.FC = () => {
 
 
         return (
-            <div className="panel-container" style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px', margin: '0 auto' }}>
-                <div className="panel-left" style={{ width: '100%' }}> 
+            <div className="panel-container" style={{ display: 'flex', gap: '30px', maxWidth: '1200px', margin: '0 auto', alignItems: 'flex-start' }}>
+                <div className="panel-left" style={{ flex: '3 1 65%' }}> 
                     <h3 className="datos-clave-title" style={{ color: THEME_COLOR, marginBottom: '25px' }}>Proyección BPS - Escenario Base (Simulación Educativa)</h3>
 
                     {/* ESCENARIO BPS */}
@@ -727,7 +848,7 @@ const CalculatorTabs: React.FC = () => {
                         </h4>
                         
                         {/* JUBILACIÓN RESULT BOX */}
-                        <div style={{textAlign: 'center', marginBottom: '15px', padding: '10px 0', border: `1px solid ${NEUTRAL_BORDER_COLOR}`, borderRadius: '5px', backgroundColor: '#F5F5F5'}}>
+                        <div style={{textAlign: 'center', marginBottom: '15px', padding: '10px 0', border: `1px solid ${NEUTRAL_BORDER_COLOR}`, borderRadius: '5px', backgroundColor: COLOR_SUAVE_ACTIVO}}>
                             <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Jubilación Mensual Estimada al Retiro (Ajustada)</p>
                             <h4 style={{ margin: '3px 0', fontWeight: 900, fontSize: '1.6rem', color: '#333' }}>
                                 {formatUYU(ingresoMensual)} UYU
@@ -735,7 +856,7 @@ const CalculatorTabs: React.FC = () => {
                         </div>
 
                         {ajusteWarning && (
-                            <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
+                            <div className="aviso-final-note" style={{ backgroundColor: COLOR_SUAVE_WARNING, borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
                                 ¡ATENCIÓN! El cálculo base fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                             </div>
                         )}
@@ -749,12 +870,12 @@ const CalculatorTabs: React.FC = () => {
                         <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCobertura.toFixed(0)}% del salario base.</span>
                     </div>
 
-                    {/* ACLARACIÓN */}
+                    {/* ACLARACIÓN (Limpieza de asteriscos) */}
                     <div className="aviso-importante-pulido" style={{ 
                         marginTop: '25px', 
                         padding: '15px', 
                         borderLeft: `5px solid ${THEME_COLOR}`, 
-                        backgroundColor: '#EBF3F2', 
+                        backgroundColor: COLOR_SUAVE_ACTIVO, 
                         borderRadius: '0 8px 8px 0',
                         fontSize: '0.95rem',
                         color: '#333'
@@ -768,7 +889,7 @@ const CalculatorTabs: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="panel-right" style={{ width: '100%', maxWidth: '300px', margin: '0 auto' }}>
+                <div className="panel-right" style={{ flex: '1 1 30%', minWidth: '300px' }}>
                     <AsesorCard />
                 </div>
             </div>
@@ -819,22 +940,21 @@ const CalculatorTabs: React.FC = () => {
         );
 
         // --- COLORES DEFINIDOS ---
-        const NEUTRAL_BORDER_COLOR = '#B4C6C4';
-        const THEME_COLOR = '#4B7770';
-        const MIN_RESULT_BG = '#F5F5F5'; 
-        const MAX_RESULT_BG = '#EBF3F2'; 
+        const NEUTRAL_BORDER_COLOR = COLOR_NEUTRO_BORDE;
+        const THEME_COLOR = COLOR_OLIVA_PRIMARIO;
+        const MIN_RESULT_BG = COLOR_SUAVE_ACTIVO; 
+        const MAX_RESULT_BG = COLOR_SUAVE_ACTIVO; 
 
 
-        // --- LAYOUT AHORA ES EN UNA SOLA COLUMNA, UNO ENCIMA DEL OTRO ---
         return (
-            <div className="panel-container" style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px', margin: '0 auto' }}>
+            <div className="panel-container" style={{ display: 'flex', gap: '30px', maxWidth: '1200px', margin: '0 auto', alignItems: 'flex-start' }}>
                 
-                <div className="panel-left" style={{ width: '100%' }}> {/* Ocupa el 100% del ancho */}
+                <div className="panel-left" style={{ flex: '3 1 65%' }}> 
                     <h3 className="datos-clave-title" style={{ color: THEME_COLOR, marginBottom: '25px' }}>Resultados de la Proyección (Simulación Educativa Fiel)</h3>
 
                     <div className="dual-scenario-container" style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
                         
-                        {/* ESCENARIO 1: Mínimo Esperado - FONDO BLANCO */}
+                        {/* ESCENARIO 1: Mínimo Esperado - FONDO SUAVE */}
                         <div className="scenario-card" style={{ 
                             border: `1px solid ${NEUTRAL_BORDER_COLOR}`, 
                             padding: '20px', 
@@ -843,9 +963,6 @@ const CalculatorTabs: React.FC = () => {
                         }}>
                             <h4 style={{ color: '#666', borderBottom: `1px dashed ${NEUTRAL_BORDER_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
                                 Escenario 1: Jubilación Base (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN * 100)}%) 
-                                <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
-                                    (?)
-                                </span>
                             </h4>
                             
                             {/* JUBILACIÓN RESULT BOX - Color discreto */}
@@ -857,7 +974,7 @@ const CalculatorTabs: React.FC = () => {
                             </div>
 
                             {ajusteWarningS1 && (
-                                <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
+                                <div className="aviso-final-note" style={{ backgroundColor: COLOR_SUAVE_WARNING, borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
                                     ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS1)} UYU) fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                                 </div>
                             )}
@@ -872,7 +989,7 @@ const CalculatorTabs: React.FC = () => {
                             <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCoberturaS1.toFixed(0)}% del aporte.</span>
                         </div>
 
-                        {/* ESCENARIO 2: Máximo Proyectado - FONDO BLANCO y ÉNFASIS */}
+                        {/* ESCENARIO 2: Máximo Proyectado - FONDO SUAVE y ÉNFASIS */}
                         <div className="scenario-card" style={{ 
                             border: `2px solid ${THEME_COLOR}`, 
                             padding: '20px', 
@@ -881,9 +998,6 @@ const CalculatorTabs: React.FC = () => {
                         }}>
                             <h4 style={{ color: THEME_COLOR, borderBottom: `1px dashed ${THEME_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
                                 Escenario 2: Jubilación Proyectada (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX * 100)}%)
-                                <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
-                                    (?)
-                                </span>
                             </h4>
                             
                             {/* JUBILACIÓN RESULT BOX - Color de tema (fondo suave) */}
@@ -895,7 +1009,7 @@ const CalculatorTabs: React.FC = () => {
                             </div>
 
                             {ajusteWarningS2 && (
-                                <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
+                                <div className="aviso-final-note" style={{ backgroundColor: COLOR_SUAVE_WARNING, borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
                                     ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS2)} UYU) fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                                 </div>
                             )}
@@ -911,12 +1025,12 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* ACLARACIÓN DE LA REGLA DE AÑOS DE APORTE (Diseño pulido) */}
+                    {/* ACLARACIÓN DE LA REGLA DE AÑOS DE APORTE (Limpieza de asteriscos) */}
                     <div className="aviso-importante-pulido" style={{ 
                         marginTop: '25px', 
                         padding: '15px', 
                         borderLeft: `5px solid ${THEME_COLOR}`, 
-                        backgroundColor: MAX_RESULT_BG, 
+                        backgroundColor: MIN_RESULT_BG, 
                         borderRadius: '0 8px 8px 0',
                         fontSize: '0.95rem',
                         color: '#333'
@@ -928,11 +1042,14 @@ const CalculatorTabs: React.FC = () => {
                            Estos escenarios reflejan el rango de resultados posibles. Tu resultado real estará entre estos valores, según tu trayectoria profesional.
                        </p>
                     </div>
+
+                    {/* Análisis Educativo (IA) */}
+                    <AnalisisEducativo datos={datosClave} />
                     
                 </div>
                 
                 {/* Panel derecho con AsesorCard */}
-                <div className="panel-right" style={{ width: '100%', maxWidth: '300px', margin: '0 auto' }}>
+                <div className="panel-right" style={{ flex: '1 1 30%', minWidth: '300px' }}>
                     <AsesorCard /> 
                 </div>
             </div>
@@ -942,11 +1059,19 @@ const CalculatorTabs: React.FC = () => {
     // Render principal de las pestañas
     return (
         <div className="calculator-tabs-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '20px'}}>
-            <div className="tab-buttons" style={{ display: 'flex', borderBottom: '2px solid #ddd', marginBottom: '20px' }}>
+            <div className="tab-buttons" style={{ display: 'flex', borderBottom: `2px solid ${COLOR_NEUTRO_BORDE}`, marginBottom: '20px' }}>
                 <button 
                     onClick={() => handleTabChange('datos')}
                     className={activeTab === 'datos' ? 'active-tab' : ''}
-                    style={{ padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600, borderBottom: activeTab === 'datos' ? '3px solid #4B7770' : 'none', color: activeTab === 'datos' ? '#4B7770' : '#666' }}
+                    style={{ 
+                        padding: '10px 20px', 
+                        border: 'none', 
+                        background: 'none', 
+                        cursor: 'pointer', 
+                        fontWeight: 600, 
+                        borderBottom: activeTab === 'datos' ? `3px solid ${COLOR_OLIVA_PRIMARIO}` : 'none', 
+                        color: activeTab === 'datos' ? COLOR_OLIVA_PRIMARIO : '#666' 
+                    }}
                 >
                     Tus Datos Clave
                 </button>
@@ -960,14 +1085,12 @@ const CalculatorTabs: React.FC = () => {
                         background: 'none', 
                         cursor: (activeTab === 'datos' && !isCalculated) ? 'not-allowed' : 'pointer', 
                         fontWeight: 600, 
-                        borderBottom: activeTab === 'proyeccion' ? '3px solid #4B7770' : 'none', 
-                        color: (activeTab === 'datos' && !isCalculated) ? '#ccc' : (activeTab === 'proyeccion' ? '#4B7770' : '#666') 
+                        borderBottom: activeTab === 'proyeccion' ? `3px solid ${COLOR_OLIVA_PRIMARIO}` : 'none', 
+                        color: (activeTab === 'datos' && !isCalculated) ? '#ccc' : (activeTab === 'proyeccion' ? COLOR_OLIVA_PRIMARIO : '#666') 
                     }}
                 >
                     Proyección
-                    {activeTab === 'datos' && !isCalculated && (
-                        <span style={{marginLeft: '10px', fontSize: '0.75rem', color: '#ff5555'}}>(Calcular Primero)</span>
-                    )}
+                    {/* Texto rojo eliminado */}
                 </button>
             </div>
 
@@ -976,12 +1099,14 @@ const CalculatorTabs: React.FC = () => {
                     datosClave.tipoAporte === 'BPS' ? renderDatosClaveBPS() : renderDatosClaveCaja()
                 )}
                 {activeTab === 'proyeccion' && (
-                    datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCajaDual()
+                    isCalculated 
+                    ? (datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCajaDual()) 
+                    : <p style={{textAlign: 'center', padding: '50px', color: '#666'}}>Por favor, ingresa tus datos en la pestaña "Tus Datos Clave" y presiona "Calcular Proyección".</p>
                 )}
             </div>
             
-            {/* --- DISCLAIMER Y COPYRIGHT AÑADIDO/ACTUALIZADO --- */}
-            <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #ddd', textAlign: 'center', fontSize: '0.8rem', color: '#666' }}>
+            {/* --- COPYRIGHT ÚNICO Y FINAL --- */}
+            <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: `1px solid ${COLOR_NEUTRO_BORDE}`, textAlign: 'center', fontSize: '0.8rem', color: '#666' }}>
                 <p style={{ margin: '5px 0' }}>
                     **© 2025 Jubilación Plus - Desarrollado por Lic. Jessica Paez.**
                 </p>
