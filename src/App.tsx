@@ -1,35 +1,41 @@
 import React from 'react';
 import './App.css';
-import CalculatorTabs from './Components/CalculatorTabs'; 
+// CORRECCIÓN: Se cambió la importación por defecto a una importación nombrada (destructuring)
+// para resolver el error de compilación "default" is not exported.
+import { CalculatorTabs } from './Components/CalculatorTabs'; 
 // 🛑 Importación de Header eliminada para resolver el error 'Cannot find file ./Header.tsx'
 
-const App: React.FC = () => {
-    return (
-        <div className="App">
-            {/* INICIO DE ENCABEZADO (HEADER) */}
-            <header className="app-header">
-                <div className="logo-container">
-                    <div className="logo-main-line">
-                        {/* Texto del Logo */}
-                        <span className="logo-j">J</span>
-                        <h1 className="logo-title">JUBILACIÓN</h1>
-                        <span className="logo-plus">+</span>
-                    </div>
-                </div>
-                <p className="logo-name">LIC. JESSICA PAEZ</p>
-                <p className="logo-subtitle">ASESORA TÉCNICA EN SEGUROS PERSONALES</p>
-                <p className="tagline">Tu Futuro. Tu Plan.</p>
-            </header>
-            {/* FIN DE ENCABEZADO (HEADER) */}
-
-            {/* Componente principal de la calculadora */}
-            <CalculatorTabs />
-
-            <footer className="app-footer">
-                <p>© 2025 Jessica Paez. Todos los derechos reservados.</p>
-            </footer>
-        </div>
-    );
-};
+function App() {
+  return (
+    <div className="App">
+      <header className="App-header" style={{
+        backgroundColor: '#008080', 
+        padding: '20px', 
+        color: 'white', 
+        textAlign: 'center',
+        marginBottom: '30px'
+      }}>
+        <h1 style={{margin: 0, fontWeight: 900, fontSize: '2.5rem'}}>JUBILACIÓN PLUS</h1>
+        <p style={{margin: '5px 0 0 0', fontSize: '1.2rem'}}>Simulador de Brecha Previsional Uruguay (Educativo)</p>
+      </header>
+      
+      <main className="App-main">
+        <CalculatorTabs />
+      </main>
+      
+      <footer className="App-footer" style={{
+        marginTop: '50px', 
+        padding: '20px', 
+        borderTop: '1px solid #eee', 
+        textAlign: 'center', 
+        fontSize: '0.8rem',
+        color: '#999'
+      }}>
+        <p>© 2025 Jubilación Plus - Desarrollado por Coderhouse. Asesoría por Lic. Jessica Paez.</p>
+        <p>Disclaimer: Simulación con fines educativos. Consulta a un asesor para un plan financiero real.</p>
+      </footer>
+    </div>
+  );
+}
 
 export default App;
