@@ -28,11 +28,20 @@ interface DatosClave {
     afapSeleccionada: string;
 }
 
-// Tipos de Resultados de Proyección
-interface ResultadosProyeccion {
+// New nested type for a single result set
+interface ResultadoUnico {
     ahorroTotal: string; 
     ingresoMensual: string; 
     porcentajeAporte: string; 
+    aporteBase: number; // Campo para guardar el aporte base usado en el cálculo
+}
+
+// Tipos de Resultados de Proyección (Contenedor)
+interface ResultadosProyeccion {
+    // Si es BPS, solo se usa 'fictoActual'
+    // Si es CAJA, se usan ambos 'fictoActual' y 'fictoProyectado'
+    fictoActual: ResultadoUnico; 
+    fictoProyectado?: ResultadoUnico; // Solo para Caja
     simulacionRealizada: boolean;
 }
 
@@ -79,10 +88,15 @@ const initialDatosClave: DatosClave = {
     afapSeleccionada: AFAP_OPTIONS[0], // República AFAP como opción inicial 
 };
 
-const initialResultados: ResultadosProyeccion = {
+const initialResultadoUnico: ResultadoUnico = {
     ahorroTotal: '0',
     ingresoMensual: '0',
     porcentajeAporte: '0',
+    aporteBase: 0,
+};
+
+const initialResultados: ResultadosProyeccion = {
+    fictoActual: initialResultadoUnico,
     simulacionRealizada: false,
 };
 
@@ -100,6 +114,8 @@ const formatUYU = (value: number): string => {
 
 // Obtiene el aporte actual según el tipo de aporte seleccionado
 const getAporteActual = (datos: DatosClave): number => {
+    // Si es BPS, se usa el aporteBaseBps ingresado por el usuario.
+    // Si es Caja, se usa el aporte base real de la categoría.
     return datos.tipoAporte === 'BPS' ? datos.aporteBaseBps : datos.aporteBaseCaja;
 };
 
@@ -113,6 +129,34 @@ const calcularCapitalProyectado = (aporteMensual: number, años: number, tasaAnu
     // Multiplicamos por (1 + tasaAnual) para simular el aporte realizado al inicio del período
     return aporteAnual * futureValueFactor * (1 + tasaAnual); 
 };
+
+// Helper function to calculate a single result set
+const calcularResultadoUnico = (datos: DatosClave, aporteBase: number, añosParaCalculo: number): ResultadoUnico => {
+    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
+    let capitalProyectado = 0;
+    if (datos.afapActiva) {
+        // La AFAP capitaliza sobre el aporte base (no solo sobre el excedente) para fines educativos/simulados.
+        // Se usa 15% del sueldo para BPS (aproximación) o el aporte real de la categoría de Caja.
+        const aporteParaCapital = datos.tipoAporte === 'BPS' ? aporteBase * 0.15 : aporteBase;
+        capitalProyectado = calcularCapitalProyectado(aporteParaCapital, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
+    }
+
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
+    // El sueldo básico jubilatorio es el promedio de los últimos 12 años (simulado con el aporte base)
+    let ingresoBase = aporteBase * TASA_REEMPLAZO_BPS_CAJA; 
+    let ingresoMensualTotal = Math.max(ingresoBase, MINIMO_INGRESOMENSUAL_EDUCATIVO);
+    
+    // 3. Cálculo del porcentaje de reemplazo
+    const porcentajeAporte = Math.min(100, (ingresoMensualTotal / aporteBase) * 100).toFixed(0); 
+    
+    return {
+        ahorroTotal: formatUYU(capitalProyectado),
+        ingresoMensual: formatUYU(ingresoMensualTotal),
+        porcentajeAporte: porcentajeAporte,
+        aporteBase: aporteBase,
+    };
+};
+
 
 // Lógica principal de la simulación
 const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
@@ -128,28 +172,46 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
         return initialResultados;
     }
 
-    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
-    let capitalProyectado = 0;
+    // SCENARIO A: Based on Current Aporte (BPS or CAJA)
+    const fictoActual = calcularResultadoUnico(datos, aporteActual, añosParaCalculo);
 
-    // *** MODIFICACIÓN CLAVE: Solo calcular si AFAP está activa ***
-    if (datos.afapActiva) {
-        capitalProyectado = calcularCapitalProyectado(aporteActual, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
+    // Si es BPS, devolvemos solo el resultado actual
+    if (datos.tipoAporte === 'BPS') {
+        return {
+            fictoActual,
+            simulacionRealizada: true,
+        };
     }
 
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
-    // *** APLICACIÓN DE LA REGLA DEL 55% ***
-    let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
-    
-    // *** MODIFICACIÓN CRÍTICA: APLICAR MÍNIMO JUBILATORIO (EDUCATIVO) ***
-    let ingresoMensualTotal = Math.max(ingresoBase, MINIMO_INGRESOMENSUAL_EDUCATIVO);
-    
-    // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
-    const porcentajeAporte = Math.min(100, (ingresoMensualTotal / aporteActual) * 100).toFixed(0); 
-    
+    // SCENARIO B: Based on Projected Category (CAJA only)
+    let fictoProyectado: ResultadoUnico | undefined = undefined;
+
+    // Lógica para CAJA (Ascenso de 1 categoría cada 3 años, máx. 10ma. Cat.)
+    if (datos.tipoAporte === 'CAJA') {
+        // Encontrar la categoría actual
+        const categoriaActualIndex = CATEGORIAS_CAJA.findIndex(c => c.nombre === datos.categoriaCajaSeleccionada.nombre);
+        
+        // Número de ascensos posibles (1 ascenso cada 3 años)
+        const ascensosPosibles = Math.floor(añosParaCalculo / 3);
+        
+        // Índice de la categoría proyectada (máximo es el índice 10, que es CATEGORIAS_CAJA.length - 1)
+        const categoriaProyectadaIndex = Math.min(
+            categoriaActualIndex + ascensosPosibles, 
+            CATEGORIAS_CAJA.length - 1 
+        );
+        
+        const categoriaProyectada = CATEGORIAS_CAJA[categoriaProyectadaIndex];
+        const aporteProyectado = categoriaProyectada.aporte;
+
+        // Solo generar el escenario proyectado si el aporte proyectado es mayor que el actual.
+        if (aporteProyectado > aporteActual) {
+            fictoProyectado = calcularResultadoUnico(datos, aporteProyectado, añosParaCalculo);
+        }
+    }
+
     return {
-        ahorroTotal: formatUYU(capitalProyectado),
-        ingresoMensual: formatUYU(ingresoMensualTotal),
-        porcentajeAporte: porcentajeAporte,
+        fictoActual,
+        fictoProyectado,
         simulacionRealizada: true,
     };
 };
@@ -355,10 +417,11 @@ const CalculatorTabs: React.FC = () => {
                     <label>Aporte Base para la Proyección (UYU):</label>
                     <input 
                         type="text" 
+                        // Muestra el aporte base actual (Caja o BPS)
                         value={formatUYU(currentAporte)}
                         readOnly 
                     />
-                    <span className="info-text">Este es el valor final de Aporte Mensual usado en el cálculo.</span>
+                    <span className="info-text">Este es el valor del Aporte Mensual base usado en el cálculo inicial.</span>
                 </div>
 
                 <div className="form-group">
@@ -454,9 +517,9 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* *** BPS: SOLO INGRESO MANUAL *** */}
+                    {/* *** BPS: SOLO INGRESO MANUAL (Etiqueta Corregida) *** */}
                     <div className="form-group" style={{marginTop: '25px', marginBottom: '25px'}}>
-                        <label htmlFor="customAporte">Ingrese su Aporte Mensual Base (UYU):</label>
+                        <label htmlFor="customAporte">Ingrese su Aporte Mensual Base (UYU):</label> 
                         <input 
                             id="customAporte"
                             name="aporteBaseBps"
@@ -561,8 +624,65 @@ const CalculatorTabs: React.FC = () => {
             </div>
         );
     };
+    
+    // Helper component for rendering a single scenario result
+    const ResultCard: React.FC<{ 
+        resultado: ResultadoUnico; 
+        datosClave: DatosClave;
+        title: string; 
+        description: string;
+        isProyectado: boolean;
+    }> = ({ resultado, datosClave, title, description, isProyectado }) => {
+        const AnalysisText = datosClave.afapActiva ? (
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo. Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
+        ) : (
+            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo).</span>
+        );
+        
+        // Lógica para determinar la categoría si es Caja y el aporte base coincide con alguna categoría
+        const categoriaInfo = datosClave.tipoAporte === 'CAJA' 
+            ? CATEGORIAS_CAJA.find(c => c.aporte === resultado.aporteBase) 
+            : null;
+        
+        const categoriaNombre = datosClave.tipoAporte === 'CAJA' && categoriaInfo
+            ? `Categoría: ${categoriaInfo.nombre}`
+            : '';
 
-    // Render de la pestaña Proyección (CORREGIDO Y CLARIFICADO)
+        return (
+            <div className="results-scenario-block" style={{ border: isProyectado && datosClave.tipoAporte === 'CAJA' ? '2px solid var(--color-primary)' : '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4 style={{ color: isProyectado && datosClave.tipoAporte === 'CAJA' ? 'var(--color-primary)' : '#333', marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>{title}</h4>
+                <p style={{ marginBottom: '15px', fontSize: '0.9rem', fontStyle: 'italic', color: '#666' }}>{description}</p>
+                
+                <div className="results-card" style={{ marginBottom: '15px' }}>
+                    <div className="result-item">
+                        <span>Aporte Mensual Base (UYU):</span>
+                        <span className="result-value-nowrap">{formatUYU(resultado.aporteBase)} UYU</span>
+                    </div>
+                    {datosClave.tipoAporte === 'CAJA' && (
+                        <div className="result-item" style={{ borderBottom: 'none' }}>
+                            <span>{categoriaNombre}</span>
+                            <span className="info-text">({datosClave.tipoAporte})</span>
+                        </div>
+                    )}
+                    <div className="result-item">
+                        <span>Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin Aporte AFAP - 0 UYU)'}:</span>
+                        <span className="result-value-nowrap">{resultado.ahorroTotal} UYU</span>
+                    </div>
+                    <div className="result-item" style={{ borderBottom: 'none' }}>
+                        <span>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
+                        <span className="result-value-nowrap">{resultado.ingresoMensual} UYU</span>
+                    </div>
+                </div>
+                
+                <p>
+                    <strong>Brecha Previsional:</strong> Tu proyección de ingreso mensual estimada representa solo el <strong>{resultado.porcentajeAporte}%</strong> de tu aporte base.
+                    {AnalysisText}
+                </p>
+            </div>
+        );
+    };
+
+    // Render de la pestaña Proyección
     const renderProyeccion = () => {
         if (!resultados.simulacionRealizada) {
             return (
@@ -585,59 +705,74 @@ const CalculatorTabs: React.FC = () => {
             );
         }
 
-        const aporteActual = getAporteActual(datosClave);
+        const añosRestantes = Math.max(0, datosClave.edadRetiro - datosClave.edadActual);
         
-        // Determina si se aplicó el mínimo o el 55%
-        const ingresoMensualFinal = Number(resultados.ingresoMensual.replace(/\./g, ''));
-        const ingresoBaseCalculado = aporteActual * TASA_REEMPLAZO_BPS_CAJA;
-        const minimoAplicado = ingresoMensualFinal === MINIMO_INGRESOMENSUAL_EDUCATIVO;
+        // Determine the result set to display
+        const resultsToRender = [];
         
-        let analisisTexto;
+        if (datosClave.tipoAporte === 'BPS') {
+            // BPS: Only one result
+            resultsToRender.push(
+                <ResultCard
+                    key="bps-actual"
+                    resultado={resultados.fictoActual}
+                    datosClave={datosClave}
+                    title="Proyección Única (BPS - Aporte Fijo)"
+                    description="Este escenario utiliza el Aporte Base Mensual que ingresaste para calcular tu pensión y capital. En BPS, la jubilación se calcula sobre el promedio de los últimos años de sueldo."
+                    isProyectado={false}
+                />
+            );
+        } else if (datosClave.tipoAporte === 'CAJA') {
+            // CAJA: Scenario 1 (Current Category)
+            resultsToRender.push(
+                <ResultCard
+                    key="caja-actual"
+                    resultado={resultados.fictoActual}
+                    datosClave={datosClave}
+                    title="ESCENARIO 1: Pensión en Base a Categoría Actual (Mínimo Esperado)"
+                    description="Se simula tu retiro manteniendo tu categoría de aporte actual hasta el final de tu carrera. Este es el resultado MÍNIMO esperado."
+                    isProyectado={false}
+                />
+            );
 
-        if (minimoAplicado && ingresoBaseCalculado < MINIMO_INGRESOMENSUAL_EDUCATIVO) {
-            // Caso 1: Se aplicó el mínimo educativo de 20.000 UYU (el 55% era menor)
-            analisisTexto = (
-                <p>
-                    <strong>1. Cobertura por Mínimo Educativo:</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> se calculó aplicando el **Mínimo Educativo** de {formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU, ya que el 55% de tu aporte ({formatUYU(ingresoBaseCalculado)}) era menor. 
-                    El ingreso proyectado representa el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado).
-                </p>
-            );
-        } else {
-            // Caso 2: Se aplicó el 55% normal (no aplica el mínimo de 20.000 UYU o el 55% es mayor)
-            const brecha = Math.max(0, aporteActual - ingresoMensualFinal);
-            
-            analisisTexto = (
-                <p>
-                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
-                    (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual) 
-                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). 
-                    La diferencia de **{formatUYU(brecha)} UYU** es la <strong>Brecha Previsional</strong>.
-                </p>
-            );
+            // CAJA: Scenario 2 (Projected Ascent)
+            if (resultados.fictoProyectado) {
+                const categoriaProyectada = CATEGORIAS_CAJA.find(c => c.aporte === resultados.fictoProyectado?.aporteBase);
+                const categoriaActualIndex = CATEGORIAS_CAJA.findIndex(c => c.nombre === datosClave.categoriaCajaSeleccionada.nombre);
+                const ascensosIndex = categoriaProyectada ? CATEGORIAS_CAJA.findIndex(c => c.nombre === categoriaProyectada.nombre) : categoriaActualIndex;
+                const ascensos = ascensosIndex - categoriaActualIndex;
+                
+                resultsToRender.push(
+                    <ResultCard
+                        key="caja-proyectado"
+                        resultado={resultados.fictoProyectado}
+                        datosClave={datosClave}
+                        title={`ESCENARIO 2: Pensión Proyectada por Ascenso de Carrera`}
+                        description={`Se simula el ascenso automático de 1 categoría cada 3 años, proyectando un total de ${ascensos} ascensos y alcanzando la **Categoría ${categoriaProyectada?.nombre ?? 'N/A'}**. Este es un resultado MÁXIMO educativo bajo este supuesto de carrera.`}
+                        isProyectado={true}
+                    />
+                );
+            } else {
+                // If no ascent is possible
+                resultsToRender.push(
+                    <div key="caja-no-proyectado" className="aviso-final-note" style={{ backgroundColor: '#F0F8FF', borderLeftColor: '#A4C4FF', marginTop: '20px' }}>
+                        AVISO: Solo se muestra el escenario actual. Esto puede deberse a que ya te encuentras en la categoría máxima (10ma.) o los años restantes para el retiro ({añosRestantes} años) no son suficientes para un ascenso (se requiere un mínimo de 3 años de servicio para avanzar de categoría).
+                    </div>
+                );
+            }
         }
-
-        // Nota AFAP (se mantiene fuera del párrafo principal para que la numeración no se rompa)
-        const afapNota = datosClave.afapActiva ? (
-            <p className="afap-nota" style={{ fontSize: '0.9em', color: '#666', marginTop: '5px' }}>
-                **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base.
-            </p>
-        ) : null;
         
+        // El análisis se basa en el escenario más alto (Proyectado o Actual si no hay Proyectado)
+        const fictoParaAnalisis = datosClave.tipoAporte === 'CAJA' && resultados.fictoProyectado ? resultados.fictoProyectado : resultados.fictoActual;
+        const aporteParaAnalisis = fictoParaAnalisis.aporteBase;
+
         return (
             <div className="panel-container col-layout-proyeccion-custom">
                 <div className="panel-left">
                     <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Local)</h3>
-                    <div className="results-card">
-                        <div className="result-item">
-                            <span>Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin Aporte AFAP - 0 UYU)'}:</span>
-                            <span className="result-value-nowrap">{resultados.ahorroTotal} UYU</span>
-                        </div>
-                        <div className="result-item" style={{ borderBottom: 'none' }}>
-                            <span>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
-                            <span className="result-value-nowrap">{resultados.ingresoMensual} UYU</span>
-                        </div>
-                    </div>
-
+                    
+                    {resultsToRender}
+                    
                     <h3 className="datos-clave-title" style={{ marginTop: '30px' }}>Análisis Educativo y Previsional</h3>
                     <div className="analysis-card">
                         <h4>
@@ -645,11 +780,11 @@ const CalculatorTabs: React.FC = () => {
                             <span className="ia-badge">GENERADO POR IA</span>
                         </h4>
                         <ol>
-                            <li style={{marginBottom: '10px'}}>
-                                {analisisTexto}
-                                {afapNota}
-                                <p style={{ fontSize: '0.9em', color: '#666', marginTop: '5px' }}>
-                                    La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
+                            <li>
+                                <p>
+                                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu ingreso mensual proyectado (tomando el escenario de {datosClave.tipoAporte === 'CAJA' && resultados.fictoProyectado ? 'Ascenso Proyectado' : 'Aporte Actual'}) representa el 
+                                    <strong> {fictoParaAnalisis.porcentajeAporte}%</strong> de tu aporte base más alto ({formatUYU(aporteParaAnalisis)} UYU). 
+                                    Esta diferencia es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
                                 </p>
                             </li>
                             <li>
