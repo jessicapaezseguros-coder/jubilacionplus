@@ -12,7 +12,7 @@ const FACTOR_ASCENSION_ANUAL = 0.03;
 const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000; 
 const CAJA_SCENARIO_DATA = {
     TASA_SUSTITUCION_MIN: 0.55, 
-    TASA_SUSTITUCION_MAX: 2.00, 
+    TASA_SUSTITUCION_MAX: 0.80, // **CORRECCIÓN CLAVE:** Tasa máxima realista (80%), no el 2.00 irreal.
 };
 
 // --- PALETA DE COLORES ---
@@ -232,11 +232,7 @@ const CalculatorTabs: React.FC = () => {
         }));
     }, []);
     
-    // Función: Controlar el cambio de pestaña
-    // *****************************************************************************************
-    // ** MODIFICACIÓN CLAVE: Se elimina la restricción 'activeTab === 'datos' && !isCalculated' 
-    // ** para que la pestaña Proyección siempre sea accesible y muestre el contenido por defecto.
-    // *****************************************************************************************
+    // Función: Controlar el cambio de pestaña (Siempre accesible)
     const handleTabChange = useCallback((tab: 'datos' | 'proyeccion') => {
         setActiveTab(tab);
     }, []);
@@ -488,10 +484,34 @@ const CalculatorTabs: React.FC = () => {
 
     // Nuevo Componente: Análisis Educativo (IA)
     const AnalisisEducativo: React.FC<{ datos: DatosClaveExtendida }> = ({ datos }) => {
-        // Datos simulados para la tabla (puedes hacerlos dinámicos si tienes la lógica)
+        // Recálculo de las proyecciones usando las nuevas tasas
+        const aporteBaseS1 = datos.aporteBaseCaja; 
+        const aporteFinalS2 = CATEGORIAS_CAJA[CATEGORIAS_CAJA.length - 1].aporte;
+        
+        const anosRestantes = datos.edadRetiro - datos.edadActual;
+        const capitalS1 = datos.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteBaseS1, anosRestantes, TASA_CRECIMIENTO_ANUAL, 0) : 0;
+        const capitalS2 = datos.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteFinalS2, anosRestantes, TASA_CRECIMIENTO_ANUAL, FACTOR_ASCENSION_ANUAL) : 0;
+        
+        let ingresoBaseCalculadoS1 = aporteBaseS1 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN;
+        const ingresoMensualS1 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoBaseCalculadoS1);
+
+        let ingresoBaseCalculadoS2 = aporteFinalS2 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX;
+        const ingresoMensualS2 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoBaseCalculadoS2);
+
+
         const tablaResumen = [
-            { categoria: '1ª Categoría', aporte: '6.447 UYU', ahorro: '5,9 millones UYU', jubilacion: '~13.000–15.000 UYU' },
-            { categoria: '10ª Categoría', aporte: '33.855 UYU', ahorro: '20,3 millones UYU', jubilacion: '~60.000–70.000 UYU' },
+            { 
+                categoria: datos.categoriaCajaSeleccionada.nombre, 
+                aporte: formatUYU(aporteBaseS1), 
+                ahorro: formatUYU(capitalS1), 
+                jubilacion: formatUYU(ingresoMensualS1) 
+            },
+            { 
+                categoria: CATEGORIAS_CAJA[CATEGORIAS_CAJA.length - 1].nombre, 
+                aporte: formatUYU(aporteFinalS2), 
+                ahorro: formatUYU(capitalS2), 
+                jubilacion: formatUYU(ingresoMensualS2)
+            },
         ];
         
         // Solo mostrar para CAJA
@@ -864,14 +884,14 @@ const CalculatorTabs: React.FC = () => {
                         <ResultadoItem label="Salario Base Usado" value={`${formatUYU(ingresoNominal)} UYU`} />
                         <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalTotal)} UYU`} color={THEME_COLOR} />
                         
-                        {/* Se eliminan los dobles asteriscos de esta línea */}
+                        
                         <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
                             Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltante}% de tu Salario Base.
                         </p>
                         <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCobertura.toFixed(0)}% del salario base.</span>
                     </div>
 
-                    {/* ACLARACIÓN (Limpieza de asteriscos) */}
+                    {/* ACLARACIÓN */}
                     <div className="aviso-importante-pulido" style={{ 
                         marginTop: '25px', 
                         padding: '15px', 
@@ -898,7 +918,7 @@ const CalculatorTabs: React.FC = () => {
     };
     
 
-    // Render Caja Proyección 
+    // Render Caja Proyección (Corregido)
     const renderProyeccionCajaDual = () => {
         const anosRestantes = datosClave.edadRetiro - datosClave.edadActual;
         
@@ -909,17 +929,18 @@ const CalculatorTabs: React.FC = () => {
         const catFinalS2 = CATEGORIAS_CAJA[CATEGORIAS_CAJA.length - 1].nombre;
         
         
-        // --- CÁLCULO DE CAPITAL (Dummy, usando la función auxiliar) ---
+        // --- CÁLCULO DE CAPITAL ---
         const capitalS1 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteBaseS1, anosRestantes, TASA_CRECIMIENTO_ANUAL, 0) : 0;
-        const capitalS2 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteBaseS1, anosRestantes, TASA_CRECIMIENTO_ANUAL, FACTOR_ASCENSION_ANUAL) : 0;
+        const capitalS2 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteFinalS2, anosRestantes, TASA_CRECIMIENTO_ANUAL, FACTOR_ASCENSION_ANUAL) : 0;
         
         
-        // --- CÁLCULO DE LA JUBILACIÓN ESTIMADA ---
+        // --- CÁLCULO DE LA JUBILACIÓN ESTIMADA (USANDO TASAS REALISTAS) ---
         let ingresoBaseCalculadoS1 = aporteBaseS1 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN;
         const ingresoMensualS1 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoBaseCalculadoS1);
         const ajusteWarningS1 = ingresoMensualS1 > ingresoBaseCalculadoS1;
 
-        let ingresoBaseCalculadoS2 = aporteFinalS2 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX;
+        // **USANDO LA TASA MÁXIMA REALISTA (0.80) en lugar de 2.00**
+        let ingresoBaseCalculadoS2 = aporteFinalS2 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX; 
         const ingresoMensualS2 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoBaseCalculadoS2);
         const ajusteWarningS2 = ingresoMensualS2 > ingresoBaseCalculadoS2;
 
@@ -964,6 +985,9 @@ const CalculatorTabs: React.FC = () => {
                         }}>
                             <h4 style={{ color: '#666', borderBottom: `1px dashed ${NEUTRAL_BORDER_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
                                 Escenario 1: Jubilación Base (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN * 100)}%) 
+                                <span className="tooltip-help" title="Tasa: porcentaje del aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
+                                    (?)
+                                </span>
                             </h4>
                             
                             {/* JUBILACIÓN RESULT BOX - Color discreto */}
@@ -984,7 +1008,7 @@ const CalculatorTabs: React.FC = () => {
                             <ResultadoItem label="Categoría Final" value={catFinalS1} />
                             <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalS1)} UYU`} color={THEME_COLOR} />
 
-                            {/* Se eliminan los dobles asteriscos de esta línea */}
+                            
                             <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
                                 Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltanteS1}% de tu Aporte Base.
                             </p>
@@ -999,7 +1023,10 @@ const CalculatorTabs: React.FC = () => {
                             backgroundColor: 'white'
                         }}>
                             <h4 style={{ color: THEME_COLOR, borderBottom: `1px dashed ${THEME_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
-                                Escenario 2: Jubilación Proyectada (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX * 100)}%)
+                                Escenario Optimizado: Máximo Reemplazo (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX * 100)}%)
+                                <span className="tooltip-help" title="Tasa: porcentaje del aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
+                                    (?)
+                                </span>
                             </h4>
                             
                             {/* JUBILACIÓN RESULT BOX - Color de tema (fondo suave) */}
@@ -1020,7 +1047,7 @@ const CalculatorTabs: React.FC = () => {
                             <ResultadoItem label="Categoría Final" value={catFinalS2} />
                             <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalS2)} UYU`} color={THEME_COLOR} />
 
-                            {/* Se eliminan los dobles asteriscos de esta línea */}
+                            
                             <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
                                 Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltanteS2}% de tu Aporte Final Proyectado.
                             </p>
@@ -1028,7 +1055,7 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* ACLARACIÓN DE LA REGLA DE AÑOS DE APORTE (Limpieza de asteriscos) */}
+                    {/* ACLARACIÓN DE LA REGLA DE AÑOS DE APORTE (Texto final ajustado) */}
                     <div className="aviso-importante-pulido" style={{ 
                         marginTop: '25px', 
                         padding: '15px', 
@@ -1042,7 +1069,7 @@ const CalculatorTabs: React.FC = () => {
                            💬 IMPORTANTE: La jubilación real en la Caja se calcula en base al promedio de los años aportados en cada categoría.
                        </p>
                        <p style={{ margin: '10px 0 0 0' }}>
-                           Estos escenarios reflejan el rango posible entre mantener tu categoría actual (MÍNIMO) y ascender a la máxima (MÁXIMO EDUCATIVO). Tu resultado real se ubicará dentro de este rango, según tu trayectoria profesional.
+                           Estos escenarios reflejan el rango posible entre mantener tu categoría actual (Escenario Base, 55%) y alcanzar el máximo esperable (Escenario Optimizado, 80%), ascendiendo a la máxima categoría. Tu resultado real se ubicará dentro de este rango.
                        </p>
                     </div>
 
@@ -1065,7 +1092,7 @@ const CalculatorTabs: React.FC = () => {
             <div className="panel-left" style={{ flex: '3 1 65%', textAlign: 'center', padding: '50px 20px', backgroundColor: COLOR_SUAVE_ACTIVO, borderRadius: '8px' }}>
                 <h3 style={{color: COLOR_OLIVA_PRIMARIO}}>Simulación Pendiente</h3>
                 <p style={{ color: '#666', marginBottom: '30px' }}>
-                    Para ver tus resultados de **Proyección** (Escenario Base y Proyectado), por favor, ingresa todos tus datos en la pestaña **"Tus Datos Clave"** y presiona **"Calcular Proyección"**.
+                    Para ver tus resultados de **Proyección** (Escenario Base y Optimizado), por favor, ingresa todos tus datos en la pestaña **"Tus Datos Clave"** y presiona **"Calcular Proyección"**.
                 </p>
                 <button
                     onClick={() => setActiveTab('datos')}
