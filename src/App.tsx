@@ -1,8 +1,8 @@
 import React from 'react';
 import './App.css';
-// CORRECCIÓN: Se cambió la importación por defecto a una importación nombrada (destructuring)
-// para resolver el error de compilación "default" is not exported.
-import { CalculatorTabs } from './Components/CalculatorTabs'; 
+// CORRECCIÓN FINAL: Se revierte a la importación por defecto (default import)
+// ya que CalculatorTabs.tsx usa 'export default CalculatorTabs;'.
+import CalculatorTabs from './Components/CalculatorTabs'; 
 // 🛑 Importación de Header eliminada para resolver el error 'Cannot find file ./Header.tsx'
 
 function App() {
