@@ -28,29 +28,19 @@ interface DatosClave {
     afapSeleccionada: string;
 }
 
-// New nested type for a single result set
-interface ResultadoUnico {
+// Tipos de Resultados de Proyección (ACTUALIZADA)
+interface ResultadosProyeccion {
     ahorroTotal: string; 
     ingresoMensual: string; 
     porcentajeAporte: string; 
-    aporteBase: number; // Campo para guardar el aporte base usado en el cálculo
-    // Nuevo campo: el valor real de pensión calculado (sin el Math.max)
-    ingresoMensualCalculado: number; 
-}
-
-// Tipos de Resultados de Proyección (Contenedor)
-interface ResultadosProyeccion {
-    // Si es BPS, solo se usa 'fictoActual'
-    // Si es CAJA, se usan ambos 'fictoActual' y 'fictoProyectado'
-    fictoActual: ResultadoUnico; 
-    fictoProyectado?: ResultadoUnico; // Solo para Caja
     simulacionRealizada: boolean;
+    ingresoMensualCalculado: number; // Nuevo campo para el chequeo de la advertencia
 }
 
 // Constantes de Simulación
 const TASA_CRECIMIENTO_ANUAL = 0.04; // 4% de rendimiento AFAP/Ahorro simulado
 const TASA_REEMPLAZO_BPS_CAJA = 0.55; // Tasa de reemplazo simulada (55% del promedio)
-const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000; // Valor de piso para simulación (solo para mensajes educativos/advertencia)
+const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000; // Valor de piso para simulación (representa mínimo jubilatorio)
 
 // LÍMITES LEGALES (Ley 20.130) para fines de validación
 const EDAD_MINIMA_RETIRO = 65; // Mínimo legal de edad para jubilarse en Uruguay
@@ -90,17 +80,12 @@ const initialDatosClave: DatosClave = {
     afapSeleccionada: AFAP_OPTIONS[0], // República AFAP como opción inicial 
 };
 
-const initialResultadoUnico: ResultadoUnico = {
+const initialResultados: ResultadosProyeccion = {
     ahorroTotal: '0',
     ingresoMensual: '0',
     porcentajeAporte: '0',
-    aporteBase: 0,
-    ingresoMensualCalculado: 0,
-};
-
-const initialResultados: ResultadosProyeccion = {
-    fictoActual: initialResultadoUnico,
     simulacionRealizada: false,
+    ingresoMensualCalculado: 0, // Inicializado
 };
 
 // =========================================================================
@@ -117,8 +102,6 @@ const formatUYU = (value: number): string => {
 
 // Obtiene el aporte actual según el tipo de aporte seleccionado
 const getAporteActual = (datos: DatosClave): number => {
-    // Si es BPS, se usa el aporteBaseBps ingresado por el usuario.
-    // Si es Caja, se usa el aporte base real de la categoría.
     return datos.tipoAporte === 'BPS' ? datos.aporteBaseBps : datos.aporteBaseCaja;
 };
 
@@ -132,40 +115,6 @@ const calcularCapitalProyectado = (aporteMensual: number, años: number, tasaAnu
     // Multiplicamos por (1 + tasaAnual) para simular el aporte realizado al inicio del período
     return aporteAnual * futureValueFactor * (1 + tasaAnual); 
 };
-
-// Helper function to calculate a single result set
-const calcularResultadoUnico = (datos: DatosClave, aporteBase: number, añosParaCalculo: number): ResultadoUnico => {
-    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
-    let capitalProyectado = 0;
-    if (datos.afapActiva) {
-        // La AFAP capitaliza sobre el aporte base (no solo sobre el excedente) para fines educativos/simulados.
-        // Se usa 15% del sueldo para BPS (aproximación) o el aporte real de la categoría de Caja.
-        const aporteParaCapital = datos.tipoAporte === 'BPS' ? aporteBase * 0.15 : aporteBase;
-        capitalProyectado = calcularCapitalProyectado(aporteParaCapital, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
-    }
-
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
-    // El sueldo básico jubilatorio es el promedio de los últimos 12 años (simulado con el aporte base)
-    let ingresoBase = aporteBase * TASA_REEMPLAZO_BPS_CAJA; 
-    
-    // *** CAMBIO CLAVE: Se elimina el Math.max con MINIMO_INGRESOMENSUAL_EDUCATIVO ***
-    let ingresoMensualTotal = ingresoBase;
-    
-    // 3. Cálculo del porcentaje de reemplazo
-    // Se usa el ingresoBase para el cálculo del porcentaje
-    const porcentajeAporte = Math.min(100, (ingresoMensualTotal / aporteBase) * 100).toFixed(0); 
-    
-    return {
-        ahorroTotal: formatUYU(capitalProyectado),
-        // Se usa el valor real (ingresoMensualTotal) para mostrar en el resultado
-        ingresoMensual: formatUYU(ingresoMensualTotal),
-        porcentajeAporte: porcentajeAporte,
-        aporteBase: aporteBase,
-        // Guardamos el valor calculado (sin formato) para usarlo en el análisis educativo (donde sí se puede mencionar el mínimo)
-        ingresoMensualCalculado: ingresoMensualTotal,
-    };
-};
-
 
 // Lógica principal de la simulación
 const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
@@ -181,47 +130,34 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
         return initialResultados;
     }
 
-    // SCENARIO A: Based on Current Aporte (BPS or CAJA)
-    const fictoActual = calcularResultadoUnico(datos, aporteActual, añosParaCalculo);
+    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
+    let capitalProyectado = 0;
 
-    // Si es BPS, devolvemos solo el resultado actual
-    if (datos.tipoAporte === 'BPS') {
-        return {
-            fictoActual,
-            simulacionRealizada: true,
-        };
+    // *** MODIFICACIÓN CLAVE: Solo calcular si AFAP está activa ***
+    if (datos.afapActiva) {
+        // Mejorar la simulación del aporte a AFAP para BPS (aproximación del 15% del sueldo)
+        const aporteParaCapital = datos.tipoAporte === 'BPS' ? aporteActual * 0.15 : aporteActual;
+        capitalProyectado = calcularCapitalProyectado(aporteParaCapital, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
     }
 
-    // SCENARIO B: Based on Projected Category (CAJA only)
-    let fictoProyectado: ResultadoUnico | undefined = undefined;
-
-    // Lógica para CAJA (Ascenso de 1 categoría cada 3 años, máx. 10ma. Cat.)
-    if (datos.tipoAporte === 'CAJA') {
-        // Encontrar la categoría actual
-        const categoriaActualIndex = CATEGORIAS_CAJA.findIndex(c => c.nombre === datos.categoriaCajaSeleccionada.nombre);
-        
-        // Número de ascensos posibles (1 ascenso cada 3 años)
-        const ascensosPosibles = Math.floor(añosParaCalculo / 3);
-        
-        // Índice de la categoría proyectada (máximo es el índice 10, que es CATEGORIAS_CAJA.length - 1)
-        const categoriaProyectadaIndex = Math.min(
-            categoriaActualIndex + ascensosPosibles, 
-            CATEGORIAS_CAJA.length - 1 
-        );
-        
-        const categoriaProyectada = CATEGORIAS_CAJA[categoriaProyectadaIndex];
-        const aporteProyectado = categoriaProyectada.aporte;
-
-        // Solo generar el escenario proyectado si el aporte proyectado es mayor que el actual.
-        if (aporteProyectado > aporteActual) {
-            fictoProyectado = calcularResultadoUnico(datos, aporteProyectado, añosParaCalculo);
-        }
-    }
-
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
+    // *** APLICACIÓN DE LA REGLA DEL 55% ***
+    let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
+    
+    // *** MODIFICACIÓN CRÍTICA: APLICAR MÍNIMO JUBILATORIO (EDUCATIVO) ***
+    let ingresoMensualTotal = Math.max(ingresoBase, MINIMO_INGRESOMENSUAL_EDUCATIVO);
+    
+    // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
+    // *** CORRECCIÓN CLAVE: Usar el ingresoBase (55% real) para mostrar el porcentaje de brecha, no el monto ajustado por el mínimo. ***
+    const porcentajeAporte = Math.min(100, (ingresoBase / aporteActual) * 100).toFixed(0); 
+    
     return {
-        fictoActual,
-        fictoProyectado,
+        ahorroTotal: formatUYU(capitalProyectado),
+        ingresoMensual: formatUYU(ingresoMensualTotal),
+        porcentajeAporte: porcentajeAporte,
         simulacionRealizada: true,
+        // Almacenar el monto final (ajustado por el mínimo) en formato numérico para el renderizado del warning
+        ingresoMensualCalculado: ingresoMensualTotal,
     };
 };
 
@@ -367,51 +303,69 @@ const CalculatorTabs: React.FC = () => {
 
     // Tarjeta del Asesor (Fija) - DISEÑO FINAL
     const AsesorCard: React.FC = () => (
-        <div className="asesor-card">
-            <h3>¿Listo para Cerrar la Brecha?</h3>
-            <p>Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:</p>
+        <div className="asesor-card" style={{ 
+            padding: '25px', 
+            borderRadius: '10px', 
+            // Color de la tarjeta de asesor (Teal/Verde-Azulado de la marca)
+            backgroundColor: '#008080', 
+            color: 'white', 
+            textAlign: 'center', 
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)' 
+        }}>
+            <h3 style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '10px' }}>¿Listo para Cerrar la Brecha?</h3>
+            <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:</p>
             
-            <div className="asesor-logo-text">
-                {/* LOGO: JUBILACIÓN+ en su propia línea */}
-                <p className="logo-line-1" style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '2px', lineHeight: '1.1' }}>
+            <div className="asesor-logo-text" style={{ padding: '15px 0', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                {/* LOGO: JUBILACIÓN+ ANTICIPATE - Mejorado para diseño */}
+                <p className="logo-line-1" style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '2px', lineHeight: '1.1', color: 'rgba(255,255,255,0.8)' }}>
                     JUBILACIÓN+
                 </p>
-                {/* LOGO: ANTICIPATE en su propia línea */}
-                <p className="logo-line-anticipate" style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '2px', lineHeight: '1.1', marginBottom: '15px' }}>
+                <p className="logo-line-anticipate" style={{ fontSize: '1.8rem', fontWeight: 900, letterSpacing: '2px', lineHeight: '1.1', marginBottom: '20px', color: 'white' }}>
                     ANTICIPATE
                 </p>
                 
                 {/* LIC. JESSICA PAEZ - AGRANDADO Y JERARQUIZADO */}
-                <p className="logo-line-2-lic" style={{ fontSize: '1.3rem', fontWeight: 600, marginTop: '20px', lineHeight: '1.1' }}>
+                <p className="logo-line-2-lic" style={{ fontSize: '1.3rem', fontWeight: 600, marginTop: '20px', lineHeight: '1.1', color: 'rgba(255,255,255,0.8)' }}>
                     LIC.
                 </p>
-                <p className="logo-line-2-name" style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '1px', lineHeight: '1.1', textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
+                <p className="logo-line-2-name" style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '1px', lineHeight: '1.1', color: 'white' }}>
                     JESSICA PAEZ
                 </p>
                 
                 {/* ROL ASESORA TÉCNICA */}
-                <p className="logo-line-3" style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '10px' }}>
+                <p className="logo-line-3" style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '10px', color: 'rgba(255,255,255,0.8)' }}>
                     ASESORA TÉCNICA EN SEGUROS PERSONALES
                 </p>
                 
-                {/* TELÉFONO */}
-                <p className="logo-line-4" style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '20px', backgroundColor: 'rgba(255,255,255,0.7)', color: '#333', padding: '5px 15px', borderRadius: '5px' }}>
+                {/* TELÉFONO - Destacado */}
+                <p className="logo-line-4" style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '25px', backgroundColor: 'white', color: '#008080', padding: '8px 15px', borderRadius: '8px' }}>
                     097113110
                 </p>
             </div>
 
-            <p style={{ marginTop: '20px' }}>Te ofrezco una asesoría sin costo para convertir estos números en un plan de acción real.</p>
+            <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>Te ofrezco una asesoría sin costo para convertir estos números en un plan de acción real.</p>
             
             <a 
                 href="https://wa.me/59897113110" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="whatsapp-button"
+                style={{ 
+                    display: 'inline-block', 
+                    marginTop: '15px', 
+                    padding: '12px 25px', 
+                    backgroundColor: '#25D366', // WhatsApp Green
+                    color: 'white', 
+                    textDecoration: 'none', 
+                    borderRadius: '30px', 
+                    fontWeight: 700,
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+                }}
             >
                 Contactar por WhatsApp
             </a>
 
-            <p className="disclaimer">Disclaimer: Esta es una proyección simplificada con fines educativos y de marketing. Los resultados son simulados y no sustituyen la asesoría profesional.</p>
+            <p className="disclaimer" style={{ fontSize: '0.75rem', marginTop: '20px', opacity: 0.7 }}>Disclaimer: Esta es una proyección simplificada con fines educativos y de marketing. Los resultados son simulados y no sustituyen la asesoría profesional.</p>
         </div>
     );
 
@@ -426,11 +380,10 @@ const CalculatorTabs: React.FC = () => {
                     <label>Aporte Base para la Proyección (UYU):</label>
                     <input 
                         type="text" 
-                        // Muestra el aporte base actual (Caja o BPS)
                         value={formatUYU(currentAporte)}
                         readOnly 
                     />
-                    <span className="info-text">Este es el valor del Aporte Mensual base usado en el cálculo inicial.</span>
+                    <span className="info-text">Este es el valor final de Aporte Mensual usado en el cálculo.</span>
                 </div>
 
                 <div className="form-group">
@@ -482,10 +435,10 @@ const CalculatorTabs: React.FC = () => {
     // Render de la pestaña de Datos Clave (BPS)
     const renderDatosClaveBPS = () => {
         return (
-            <div className="panel-container col-layout-bps-custom">
-                <div className="panel-left">
+            <div className="panel-container col-layout-bps-custom" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                <div className="panel-left" style={{ flex: 2 }}>
                     <h3 className="datos-clave-title">Datos Clave (BPS)</h3>
-                    <div className="caja-selector">
+                    <div className="caja-selector" style={{ marginBottom: '20px' }}>
                         <button 
                             className="caja-button active"
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
@@ -495,13 +448,14 @@ const CalculatorTabs: React.FC = () => {
                         <button 
                             className="caja-button"
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'CAJA' }))}
+                            style={{ opacity: 0.6 }} // Grey out the inactive option
                         >
                             Caja de Profesionales
                         </button>
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group half">
+                    <div className="form-row" style={{ display: 'flex', gap: '20px' }}>
+                        <div className="form-group half" style={{ flex: 1 }}>
                             <label htmlFor="edadActual">Edad Actual (años):</label>
                             <input 
                                 id="edadActual"
@@ -512,7 +466,7 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                         </div>
-                        <div className="form-group half">
+                        <div className="form-group half" style={{ flex: 1 }}>
                             <label htmlFor="edadRetiro">Edad de Retiro Deseada (años):</label>
                             <input 
                                 id="edadRetiro"
@@ -526,9 +480,9 @@ const CalculatorTabs: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* *** BPS: SOLO INGRESO MANUAL (Etiqueta Corregida) *** */}
+                    {/* *** BPS: SOLO INGRESO MANUAL *** */}
                     <div className="form-group" style={{marginTop: '25px', marginBottom: '25px'}}>
-                        <label htmlFor="customAporte">Ingrese su Aporte Mensual Base (UYU):</label> 
+                        <label htmlFor="customAporte">Ingrese su Aporte Mensual Base (UYU):</label>
                         <input 
                             id="customAporte"
                             name="aporteBaseBps"
@@ -552,7 +506,7 @@ const CalculatorTabs: React.FC = () => {
                     )}
                 </div>
 
-                <div className="panel-right">
+                <div className="panel-right" style={{ flex: 1 }}>
                     <ProyeccionOptions />
                 </div>
             </div>
@@ -562,13 +516,14 @@ const CalculatorTabs: React.FC = () => {
     // Render de la pestaña de Datos Clave (Caja de Profesionales)
     const renderDatosClaveCaja = () => {
         return (
-            <div className="panel-container col-layout-caja-custom">
-                <div className="panel-left">
+            <div className="panel-container col-layout-caja-custom" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                <div className="panel-left" style={{ flex: 2 }}>
                     <h3 className="datos-clave-title">Datos Clave (CAJA)</h3>
-                    <div className="caja-selector">
+                    <div className="caja-selector" style={{ marginBottom: '20px' }}>
                         <button 
                             className="caja-button"
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
+                            style={{ opacity: 0.6 }} // Grey out the inactive option
                         >
                             BPS
                         </button>
@@ -580,8 +535,8 @@ const CalculatorTabs: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group half">
+                    <div className="form-row" style={{ display: 'flex', gap: '20px' }}>
+                        <div className="form-group half" style={{ flex: 1 }}>
                             <label htmlFor="edadActual">Edad Actual (años):</label>
                             <input 
                                 id="edadActual"
@@ -591,7 +546,7 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                         </div>
-                        <div className="form-group half">
+                        <div className="form-group half" style={{ flex: 1 }}>
                             <label htmlFor="edadRetiro">Edad de Retiro Deseada (años):</label>
                             <input 
                                 id="edadRetiro"
@@ -607,14 +562,23 @@ const CalculatorTabs: React.FC = () => {
                     {/* Título de Selección de Categoría (Correcto para Caja) */}
                     <h4 style={{marginTop: '25px', marginBottom: '15px', color: 'var(--color-text)', fontWeight: 600}}>Seleccione Categoría de Aporte (Cuota Unificada CJPPU):</h4>
 
-                    <div className="grid-3-cols" style={{marginBottom: '25px'}}>
+                    <div className="grid-3-cols" style={{marginBottom: '25px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px'}}>
                         {CATEGORIAS_CAJA.map((categoria) => (
                             <button
                                 key={categoria.nombre}
                                 className={`aporte-button ${datosClave.categoriaCajaSeleccionada.nombre === categoria.nombre ? 'active' : ''}`}
                                 onClick={() => handleCajaCategorySelect(categoria)}
+                                style={{ 
+                                    padding: '10px', 
+                                    borderRadius: '5px', 
+                                    border: `1px solid ${datosClave.categoriaCajaSeleccionada.nombre === categoria.nombre ? '#008080' : '#ddd'}`,
+                                    backgroundColor: datosClave.categoriaCajaSeleccionada.nombre === categoria.nombre ? '#E0FFFF' : 'white',
+                                    color: '#333',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                }}
                             >
-                                {categoria.nombre} <span>{formatUYU(categoria.aporte)} UYU</span>
+                                <strong>{categoria.nombre}</strong> <span style={{display: 'block', fontSize: '0.85rem'}}>{formatUYU(categoria.aporte)} UYU</span>
                             </button>
                         ))}
                     </div>
@@ -627,91 +591,26 @@ const CalculatorTabs: React.FC = () => {
                     )}
                 </div>
 
-                <div className="panel-right">
+                <div className="panel-right" style={{ flex: 1 }}>
                     <ProyeccionOptions />
                 </div>
             </div>
         );
     };
-    
-    // Helper component for rendering a single scenario result
-    const ResultCard: React.FC<{ 
-        resultado: ResultadoUnico; 
-        datosClave: DatosClave;
-        title: string; 
-        description: string;
-        isProyectado: boolean;
-    }> = ({ resultado, datosClave, title, description, isProyectado }) => {
-        // Mensaje de advertencia si el resultado es menor al mínimo educativo (20.000 UYU)
-        const isBelowMinimum = resultado.ingresoMensualCalculado < MINIMO_INGRESOMENSUAL_EDUCATIVO;
-        
-        // Lógica para determinar la categoría si es Caja y el aporte base coincide con alguna categoría
-        const categoriaInfo = datosClave.tipoAporte === 'CAJA' 
-            ? CATEGORIAS_CAJA.find(c => c.aporte === resultado.aporteBase) 
-            : null;
-        
-        const categoriaNombre = datosClave.tipoAporte === 'CAJA' && categoriaInfo
-            ? `Categoría: ${categoriaInfo.nombre}`
-            : '';
 
-        return (
-            <div className="results-scenario-block" style={{ border: isProyectado && datosClave.tipoAporte === 'CAJA' ? '2px solid var(--color-primary)' : '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4 style={{ color: isProyectado && datosClave.tipoAporte === 'CAJA' ? 'var(--color-primary)' : '#333', marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>{title}</h4>
-                <p style={{ marginBottom: '15px', fontSize: '0.9rem', fontStyle: 'italic', color: '#666' }}>{description}</p>
-                
-                <div className="results-card" style={{ marginBottom: '15px' }}>
-                    <div className="result-item">
-                        <span>Aporte Mensual Base (UYU):</span>
-                        <span className="result-value-nowrap">{formatUYU(resultado.aporteBase)} UYU</span>
-                    </div>
-                    {datosClave.tipoAporte === 'CAJA' && (
-                        <div className="result-item" style={{ borderBottom: 'none' }}>
-                            <span>{categoriaNombre}</span>
-                            <span className="info-text">({datosClave.tipoAporte})</span>
-                        </div>
-                    )}
-                    <div className="result-item">
-                        <span>Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin Aporte AFAP - 0 UYU)'}:</span>
-                        <span className="result-value-nowrap">{resultado.ahorroTotal} UYU</span>
-                    </div>
-                    <div className="result-item" style={{ borderBottom: 'none' }}>
-                        <span>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
-                        {/* Se muestra el resultado real calculado */}
-                        <span className="result-value-nowrap">{resultado.ingresoMensual} UYU</span>
-                    </div>
-                </div>
-                
-                {isBelowMinimum && (
-                    <div className="aviso-final-note" style={{ backgroundColor: '#F8EFEA', borderLeftColor: 'red', color: 'red', marginBottom: '15px' }}>
-                        ¡ATENCIÓN! El monto simulado ({resultado.ingresoMensual} UYU) está por debajo del Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU). Tu pensión real se ajustaría a ese mínimo legal.
-                    </div>
-                )}
-                
-                <p>
-                    <strong>Brecha Previsional:</strong> Tu proyección de ingreso mensual estimada representa solo el <strong>{resultado.porcentajeAporte}%</strong> de tu aporte base.
-                    <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo. Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
-                </p>
-            </div>
-        );
-    };
-
-    // Render de la pestaña Proyección
+    // Render de la pestaña Proyección (REDESIGNADO)
     const renderProyeccion = () => {
         if (!resultados.simulacionRealizada) {
-            // ... (initial state code)
             return (
-                <div className="proyeccion-initial-state">
+                <div className="proyeccion-initial-state" style={{ textAlign: 'center', padding: '50px', border: '1px dashed #ccc' }}>
                     <h3 style={{ color: '#BCA49A' }}>Inicie su Proyección</h3>
                     <p>
                         Para ver sus resultados estimados, ingrese sus <strong>Datos Clave</strong> en la pestaña anterior y presione el botón <strong>Calcular Proyección</strong>.
                     </p>
-                    <p>
-                        Le mostraremos el ahorro total estimado y el ingreso mensual proyectado en su retiro, además de un análisis educativo sobre la brecha previsional.
-                    </p>
                     <button 
                         className="calculate-button" 
                         onClick={() => setActiveTab('datos')}
-                        style={{ width: 'auto', padding: '15px 30px' }}
+                        style={{ width: 'auto', padding: '15px 30px', marginTop: '20px', backgroundColor: '#008080', color: 'white', border: 'none', borderRadius: '5px' }}
                     >
                         Volver a Datos Clave
                     </button>
@@ -719,161 +618,54 @@ const CalculatorTabs: React.FC = () => {
             );
         }
 
-        const añosRestantes = Math.max(0, datosClave.edadRetiro - datosClave.edadActual);
-        
-        // Determine the result set to display
-        const resultsToRender = [];
-        
-        if (datosClave.tipoAporte === 'BPS') {
-            // BPS: Only one result
-            resultsToRender.push(
-                <ResultCard
-                    key="bps-actual"
-                    resultado={resultados.fictoActual}
-                    datosClave={datosClave}
-                    title="Proyección Única (BPS - Aporte Fijo)"
-                    description="Este escenario utiliza el Aporte Base Mensual que ingresaste para calcular tu pensión y capital. En BPS, la jubilación se calcula sobre el promedio de los últimos años de sueldo."
-                    isProyectado={false}
-                />
-            );
-        } else if (datosClave.tipoAporte === 'CAJA') {
-            // CAJA: Scenario 1 (Current Category)
-            resultsToRender.push(
-                <ResultCard
-                    key="caja-actual"
-                    resultado={resultados.fictoActual}
-                    datosClave={datosClave}
-                    title="ESCENARIO 1: Pensión en Base a Categoría Actual (Mínimo Esperado)"
-                    description="Se simula tu retiro manteniendo tu categoría de aporte actual hasta el final de tu carrera. Este es el resultado MÍNIMO esperado."
-                    isProyectado={false}
-                />
-            );
+        const aporteActual = getAporteActual(datosClave);
+        const ingresoBaseReal = aporteActual * TASA_REEMPLAZO_BPS_CAJA;
 
-            // CAJA: Scenario 2 (Projected Ascent)
-            if (resultados.fictoProyectado) {
-                const categoriaProyectada = CATEGORIAS_CAJA.find(c => c.aporte === resultados.fictoProyectado?.aporteBase);
-                const categoriaActualIndex = CATEGORIAS_CAJA.findIndex(c => c.nombre === datosClave.categoriaCajaSeleccionada.nombre);
-                const ascensosIndex = categoriaProyectada ? CATEGORIAS_CAJA.findIndex(c => c.nombre === categoriaProyectada.nombre) : categoriaActualIndex;
-                const ascensos = ascensosIndex - categoriaActualIndex;
-                
-                resultsToRender.push(
-                    <ResultCard
-                        key="caja-proyectado"
-                        resultado={resultados.fictoProyectado}
-                        datosClave={datosClave}
-                        title={`ESCENARIO 2: Pensión Proyectada por Ascenso de Carrera`}
-                        description={`Se simula el ascenso automático de 1 categoría cada 3 años, proyectando un total de ${ascensos} ascensos y alcanzando la **Categoría ${categoriaProyectada?.nombre ?? 'N/A'}**. Este es un resultado MÁXIMO educativo bajo este supuesto de carrera.`}
-                        isProyectado={true}
-                    />
-                );
-            } else {
-                // If no ascent is possible
-                resultsToRender.push(
-                    <div key="caja-no-proyectado" className="aviso-final-note" style={{ backgroundColor: '#F0F8FF', borderLeftColor: '#A4C4FF', marginTop: '20px' }}>
-                        AVISO: Solo se muestra el escenario actual. Esto puede deberse a que ya te encuentras en la categoría máxima (10ma.) o los años restantes para el retiro ({añosRestantes} años) no son suficientes para un ascenso (se requiere un mínimo de 3 años de servicio para avanzar de categoría).
-                    </div>
-                );
-            }
-        }
-        
-        // El análisis se basa en el escenario más alto (Proyectado o Actual si no hay Proyectado)
-        const fictoParaAnalisis = datosClave.tipoAporte === 'CAJA' && resultados.fictoProyectado ? resultados.fictoProyectado : resultados.fictoActual;
-        const aporteParaAnalisis = fictoParaAnalisis.aporteBase;
-        const ingresoMensualAnalisis = Math.max(fictoParaAnalisis.ingresoMensualCalculado, MINIMO_INGRESOMENSUAL_EDUCATIVO);
-
-        // Se usa el valor MAX(calculado, MINIMO_EDUCATIVO) para el mensaje de análisis.
+        // Texto actualizado para reflejar que la renta AFAP se ve reflejada solo en el capital.
         const AnalysisText = datosClave.afapActiva ? (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo. **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
+            <span> (**Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
         ) : (
-            <span> (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo).</span>
+            <span>.</span>
         );
-
-
+        
         return (
-            <div className="proyeccion-layout-container">
-                <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Local)</h3>
+            <div className="proyeccion-layout-container" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
                 
-                {/* 1. SECCIÓN DE RESULTADOS (Full Width) */}
-                <div className="results-section" style={{ marginBottom: '20px' }}>
-                    {resultsToRender}
-                </div>
-                
-                {/* 2. SECCIÓN DE ANÁLISIS Y ASESOR (Dos Columnas Laterales) */}
-                {/* NOTA: Para que esto se vea correctamente, debes añadir el CSS para hacer que estos divs se vean uno al lado del otro (e.g., usando Flexbox o Grid) */}
-                <div className="analysis-advisor-row" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                {/* PANEL IZQUIERDO: RESULTADOS Y ANÁLISIS (70%) */}
+                <div className="panel-left" style={{ flex: 2 }}>
+                    <h3 className="datos-clave-title" style={{ color: '#333' }}>Resultados de la Proyección (Escenario Único)</h3>
                     
-                    {/* Columna de Análisis (70% del ancho, ajusta según tu CSS) */}
-                    <div className="analysis-column" style={{ flex: 2 }}>
-                        <h3 className="datos-clave-title" style={{ marginTop: '0' }}>Análisis Educativo y Previsional</h3>
-                        <div className="analysis-card">
-                            <h4>
-                                <span>Análisis Educativo y Previsional</span>
-                                <span className="ia-badge">GENERADO POR IA</span>
-                            </h4>
-                            <ol>
-                                <li>
-                                    <p>
-                                        <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{formatUYU(ingresoMensualAnalisis)} UYU</strong> 
-                                        {AnalysisText} 
-                                        representa solo el <strong>{fictoParaAnalisis.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteParaAnalisis)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
-                                    </p>
-                                </li>
-                                <li>
-                                    <p>
-                                        <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema de seguridad social uruguayo está diseñado para proporcionar una <strong>base de sustentación</strong>. La renta de AFAP, al momento del retiro, se calcula sobre tu **capital acumulado**, no sobre un monto fijo, y está sujeta a la ley de anualidades. Es por eso que se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como <strong>Seguros de Renta Personal</strong> o <strong>Ahorro + Vida</strong>. Estos productos ofrecen rendimientos optimizados y blindaje financiero.
-                                    </p>
-                                </li>
-                                <li>
-                                    <p>
-                                        <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la jubilación por edad. Tu planificación debe estar enfocada en cumplir estos requisitos **además** de la meta de ahorro.
-                                    </p>
-                                </li>
-                                <li>
-                                    <p>
-                                        <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. El paso más importante es iniciar un plan de ahorro privado con aportes fijos. Si bien la simulación te da una base, es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta que se ajuste a tus metas (sea <strong>Renta, Ahorro + Vida</strong> u otra).
-                                    </p>
-                                </li>
-                            </ol>
+                    {/* 1. HERO METRICS (Métricas Destacadas) - DISEÑO MODERNO */}
+                    <div className="hero-results" style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '20px' }}>
+                        
+                        {/* METRIC 1: CAPITAL AFAP/AHORRO */}
+                        <div className="metric-ahorro" style={{ flex: 1, textAlign: 'center', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
+                                Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin AFAP)'}:
+                            </span>
+                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: 800, color: '#008080', marginTop: '5px' }}>
+                                {resultados.ahorroTotal} UYU
+                            </span>
+                        </div>
+
+                        {/* METRIC 2: INGRESO MENSUAL BASE */}
+                        <div className="metric-ingreso" style={{ flex: 1, textAlign: 'center', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#E0FFFF' }}>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#333', fontWeight: 500 }}>
+                                Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):
+                            </span>
+                            <span style={{ display: 'block', fontSize: '2.5rem', fontWeight: 900, color: '#333', marginTop: '5px' }}>
+                                {resultados.ingresoMensual} UYU
+                            </span>
                         </div>
                     </div>
 
-                    {/* Columna de Asesor (30% del ancho, ajusta según tu CSS) */}
-                    <div className="advisor-column" style={{ flex: 1, minWidth: '300px' }}>
-                        <AsesorCard />
-                    </div>
-                </div>
-            </div>
-        );
-    };
-    
-    // Función de renderizado principal
-    const renderContent = () => {
-        if (activeTab === 'datos') {
-            return datosClave.tipoAporte === 'BPS' ? renderDatosClaveBPS() : renderDatosClaveCaja();
-        }
-        return renderProyeccion();
-    };
-
-    return (
-        // Estilos para hacer el componente responsive y centrado en PC
-        <div className="calculator-tabs-component" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 15px' }}>
-            <div className="header-tabs">
-                <button 
-                    className={`tab-header ${activeTab === 'datos' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('datos')}
-                >
-                    Tus Datos Clave
-                </button>
-                <button 
-                    className={`tab-header ${activeTab === 'proyeccion' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('proyeccion')}
-                >
-                    Proyección
-                </button>
-            </div>
-            {renderContent()}
-        </div>
-    );
-};
-
-export default CalculatorTabs;
+                    {/* ADVERTENCIA BANNER (Solo aparece si el cálculo real fue menor al mínimo) */}
+                    {ingresoBaseReal < MINIMO_INGRESOMENSUAL_EDUCATIVO && (
+                        <div className="warning-banner" style={{ 
+                            backgroundColor: '#FFEBEE', 
+                            borderLeft: '5px solid #F44336', 
+                            padding: '15px', 
+                            borderRadius: '5px', 
+                            marginBottom: '20px', 
+                            color: '#F44336',
+                            fontWeight:
