@@ -586,45 +586,42 @@ const CalculatorTabs: React.FC = () => {
         }
 
         const aporteActual = getAporteActual(datosClave);
+        
+        // Determina si se aplicó el mínimo o el 55%
         const ingresoMensualFinal = Number(resultados.ingresoMensual.replace(/\./g, ''));
-        
-        // Cálculos para la lógica del análisis
-        const TASA_REEMPLAZO_REDONDEADA = Math.round(TASA_REEMPLAZO_BPS_CAJA * 100);
         const ingresoBaseCalculado = aporteActual * TASA_REEMPLAZO_BPS_CAJA;
+        const minimoAplicado = ingresoMensualFinal === MINIMO_INGRESOMENSUAL_EDUCATIVO;
         
-        // Componentes del Análisis
-        const AFAP_NOTE = datosClave.afapActiva 
-            ? <span> **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base.</span>
-            : null;
+        let analisisTexto;
 
-        let analysisTitle;
-        let paragraphContent;
-
-        if (ingresoBaseCalculado < MINIMO_INGRESOMENSUAL_EDUCATIVO) {
-            // SCENARIO 1: MÍNIMO APLICADO (20.000 UYU en este caso)
-            analysisTitle = "1. Cobertura por Mínimo Educativo (Base Cubierta):";
-            
-            paragraphContent = (
+        if (minimoAplicado && ingresoBaseCalculado < MINIMO_INGRESOMENSUAL_EDUCATIVO) {
+            // Caso 1: Se aplicó el mínimo educativo de 20.000 UYU (el 55% era menor)
+            analisisTexto = (
                 <p>
-                    Tu proyección de ingreso mensual estimada es de <strong>{resultados.ingresoMensual} UYU</strong>. Este monto se basa en el **Mínimo Jubilatorio Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU)**, ya que el cálculo del {datosClave.tipoAporte} ({TASA_REEMPLAZO_REDONDEADA}% de tu aporte actual) sería de {formatUYU(ingresoBaseCalculado)} UYU, pero el simulador aplica el piso. {AFAP_NOTE}
-                    <br/><br/>
-                    Dado que el ingreso base es **mayor** a tu aporte actual de {formatUYU(aporteActual)} UYU (asumido como tu nivel de vida deseado), tu **base está cubierta o superada**. No obstante, este es el piso del sistema. Para asegurar una calidad de vida confortable y no solo la base, la planificación complementaria sigue siendo esencial.
+                    <strong>1. Cobertura por Mínimo Educativo:</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> se calculó aplicando el **Mínimo Educativo** de {formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU, ya que el 55% de tu aporte ({formatUYU(ingresoBaseCalculado)}) era menor. 
+                    El ingreso proyectado representa el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado).
                 </p>
             );
-
         } else {
-            // SCENARIO 2: REGLA DEL 55% APLICADA (Ingreso > 20.000 UYU)
-            const brecha = aporteActual - ingresoMensualFinal;
+            // Caso 2: Se aplicó el 55% normal (no aplica el mínimo de 20.000 UYU o el 55% es mayor)
+            const brecha = Math.max(0, aporteActual - ingresoMensualFinal);
             
-            analysisTitle = "1. La Brecha Previsional (Foco Educativo):";
-            paragraphContent = (
+            analisisTexto = (
                 <p>
-                    Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> (Calculada como el **{TASA_REEMPLAZO_REDONDEADA}%** de tu aporte actual). {AFAP_NOTE}
-                    <br/><br/>
-                    Esto representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual de {formatUYU(aporteActual)} UYU (asumiendo tu nivel de vida deseado). La diferencia de **{formatUYU(brecha)} UYU** es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
+                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
+                    (Calculado como {TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte actual) 
+                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). 
+                    La diferencia de **{formatUYU(brecha)} UYU** es la <strong>Brecha Previsional</strong>.
                 </p>
             );
         }
+
+        // Nota AFAP (se mantiene fuera del párrafo principal para que la numeración no se rompa)
+        const afapNota = datosClave.afapActiva ? (
+            <p className="afap-nota" style={{ fontSize: '0.9em', color: '#666', marginTop: '5px' }}>
+                **Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base.
+            </p>
+        ) : null;
         
         return (
             <div className="panel-container col-layout-proyeccion-custom">
@@ -632,12 +629,10 @@ const CalculatorTabs: React.FC = () => {
                     <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Local)</h3>
                     <div className="results-card">
                         <div className="result-item">
-                            {/* TÍTULO CORREGIDO PARA MOSTRAR LA CONEXIÓN AFAP/CAPITAL */}
                             <span>Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin Aporte AFAP - 0 UYU)'}:</span>
                             <span className="result-value-nowrap">{resultados.ahorroTotal} UYU</span>
                         </div>
                         <div className="result-item" style={{ borderBottom: 'none' }}>
-                            {/* TÍTULO CORREGIDO: SE ELIMINA LA REFERENCIA A RENTA AFAP */}
                             <span>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
                             <span className="result-value-nowrap">{resultados.ingresoMensual} UYU</span>
                         </div>
@@ -650,9 +645,12 @@ const CalculatorTabs: React.FC = () => {
                             <span className="ia-badge">GENERADO POR IA</span>
                         </h4>
                         <ol>
-                            <li>
-                                <strong>{analysisTitle}</strong> 
-                                {paragraphContent}
+                            <li style={{marginBottom: '10px'}}>
+                                {analisisTexto}
+                                {afapNota}
+                                <p style={{ fontSize: '0.9em', color: '#666', marginTop: '5px' }}>
+                                    La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
+                                </p>
                             </li>
                             <li>
                                 <p>
