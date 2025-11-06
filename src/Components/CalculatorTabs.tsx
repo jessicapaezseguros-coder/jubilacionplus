@@ -60,7 +60,7 @@ const AFAP_OPTIONS = ["AFAP Sura", "AFAP Integración", "AFAP Unión", "AFAP Rep
 // Tipos de Resultados
 interface ResultadosProyeccion {
     ahorroTotal: string;
-    ingresoMensual: string;
+    ingresoMensual: string; // Se mantiene el nombre de la variable interna, pero el label será "Jubilación"
     porcentajeAporte: string; 
     simulacionRealizada: boolean;
     ajustePorMinimo: boolean;
@@ -332,7 +332,7 @@ const CalculatorTabs: React.FC = () => {
             color: 'white', 
             textAlign: 'center', 
             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-            marginTop: '30px' 
+            marginTop: '0' // Quitar el margen superior para que se ajuste a la columna
         }}>
             <h3 style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '10px' }}>¿Listo para Cerrar la Brecha?</h3>
             <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:</p>
@@ -688,7 +688,7 @@ const CalculatorTabs: React.FC = () => {
                         gap: '15px', 
                         marginBottom: '20px' 
                     }}>
-                        {/* 1. Ingreso Mensual Estimado (Mayor Jerarquía) */}
+                        {/* 1. Jubilación Mensual Estimada (Mayor Jerarquía) */}
                         <div style={{ 
                             backgroundColor: resultados.ajustePorMinimo ? '#ffe0b2' : '#e8f5e9', 
                             padding: '15px', 
@@ -697,11 +697,11 @@ const CalculatorTabs: React.FC = () => {
                             textAlign: 'center',
                             gridColumn: 'span 2 / auto'
                         }}>
-                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>Ingreso Mensual Estimado en Retiro</p>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>Jubilación Mensual Estimada</p>
                             <h4 style={{ margin: '5px 0 0 0', fontWeight: 900, fontSize: '1.8rem', color: resultados.ajustePorMinimo ? '#ff6600' : '#008080' }}>
                                 {resultados.ingresoMensual}
                             </h4>
-                            <span style={{ fontSize: '0.8rem', color: '#999' }}>Jubilación Base {datosClave.tipoAporte}</span>
+                            <span style={{ fontSize: '0.8rem', color: '#999' }}>Base {datosClave.tipoAporte}</span>
                         </div>
 
                         {/* 2. Ahorro Total Estimado */}
@@ -762,7 +762,7 @@ const CalculatorTabs: React.FC = () => {
                                 <p>
                                     <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
                                     {AnalysisText} 
-                                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu salario promedio actual (asumiendo tu salario promedio de {formatUYU(salarioBase)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás como <strong>monto de retiro</strong> es la <strong>Brecha Previsional</strong>.
+                                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu salario promedio actual (asumiendo tu salario promedio de {formatUYU(salarioBase)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás como **monto de retiro** es la **Brecha Previsional**.
                                 </p>
                             </li>
                             <li style={{ marginBottom: '15px' }}>
@@ -772,12 +772,12 @@ const CalculatorTabs: React.FC = () => {
                             </li>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
-                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley exige el cumplimiento de <strong>{EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong> para acceder a la <strong>jubilación</strong>. 
+                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley exige el cumplimiento de <strong>{EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong> para acceder a la **jubilación**. 
                                 </p>
                             </li>
                             <li style={{ marginBottom: '5px' }}>
                                 <p>
-                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. Es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta de ahorro.
+                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el **interés compuesto** son tus mayores aliados. Es fundamental una **asesoría personalizada** para definir la mejor herramienta de ahorro.
                                 </p>
                             </li>
                         </ol>
@@ -805,13 +805,22 @@ const CalculatorTabs: React.FC = () => {
         const catFinalS2 = CATEGORIAS_CAJA[CATEGORIAS_CAJA.length - 1].nombre;
         const aporteFinalS2 = CATEGORIAS_CAJA[CATEGORIAS_CAJA.length - 1].aporte;
         
-        // Ingreso Mensual Estimado (Usamos los valores realistas promedio del análisis)
+        // Jubilación Mensual Estimada (Usamos los valores realistas promedio del análisis)
         const ingresoMensualS1 = CAJA_SCENARIO_DATA.MINIMO_INGRESO_REALISTA;
         const ingresoMensualS2 = CAJA_SCENARIO_DATA.MAXIMO_INGRESO_REALISTA;
 
         // Cálculo del porcentaje de reemplazo - Aclaración: Es un porcentaje de reemplazo Educativo
         const porcentajeS1 = Math.min(100, (ingresoMensualS1 / datosClave.aporteBaseCaja) * 100).toFixed(0); 
-        const porcentajeS2 = Math.min(100, (ingresoMensualS2 / aporteFinalS2) * 100).toFixed(0);
+        // En este caso, el porcentaje S2 se calcula con el aporte final de la Categoría 10ma
+        const porcentajeS2 = Math.min(100, (ingresoMensualS2 / aporteFinalS2) * 100).toFixed(0); 
+        
+        // Función auxiliar para renderizar el resultado con elegancia
+        const ResultadoItem: React.FC<{ label: string, value: string, color?: string }> = ({ label, value, color }) => (
+            <div className="result-item-mini" style={{display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid #eee'}}>
+                <span style={{fontWeight: 500, fontSize: '0.9rem'}}>{label}:</span> 
+                <span style={{fontWeight: 700, color: color || '#000', fontSize: '1rem'}}>{value}</span>
+            </div>
+        );
 
         return (
             <div className="panel-container col-layout-proyeccion-custom" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap', maxWidth: '1000px', margin: '0 auto' }}>
@@ -820,87 +829,73 @@ const CalculatorTabs: React.FC = () => {
 
                     <div className="dual-scenario-container" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                         
-                        {/* ESCENARIO 1: Base a Categoría Actual (Mínimo Esperado) - DISEÑO MÍNIMO */}
+                        {/* ESCENARIO 1: Base a Categoría Actual (Mínimo Esperado) - DISEÑO MÍNIMO PULIDO */}
                         <div className="scenario-card" style={{ 
                             flex: '1 1 45%', 
+                            minWidth: '250px',
                             border: '1px solid #ddd', 
                             padding: '20px', 
                             borderRadius: '8px', 
-                            backgroundColor: '#f9f9f9' // Color de base
+                            backgroundColor: '#f9f9f9'
                         }}>
                             <h4 style={{ color: '#BCA49A', borderBottom: '1px dashed #ddd', paddingBottom: '10px' }}>Escenario 1: Jubilación Base (Mínimo)</h4>
                             <p style={{ fontSize: '0.9rem', marginBottom: '15px', fontStyle: 'italic', color: '#666' }}>
                                 Manteniendo la categoría de aporte actual hasta el final.
                             </p>
                             
-                            <div style={{textAlign: 'center', marginBottom: '15px'}}>
-                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#BCA49A' }}>Ingreso Mensual Estimado</p>
+                            <div style={{textAlign: 'center', marginBottom: '20px', padding: '15px 0', border: '1px solid #BCA49A', borderRadius: '5px', backgroundColor: '#FFF3E0'}}>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#BCA49A' }}>Jubilación Mensual Estimada</p>
                                 <h4 style={{ margin: '5px 0', fontWeight: 900, fontSize: '1.8rem', color: '#BCA49A' }}>
                                     {formatUYU(ingresoMensualS1)} UYU
                                 </h4>
                             </div>
 
-                            <div className="result-item-mini" style={{borderTop: '1px solid #eee', paddingTop: '10px'}}>
-                                <span style={{fontWeight: 500}}>Aporte Base (Nominal):</span> 
-                                <span style={{fontWeight: 700}}>{formatUYU(datosClave.aporteBaseCaja)} UYU</span>
-                            </div>
-                            <div className="result-item-mini">
-                                <span style={{fontWeight: 500}}>Categoría Final:</span>
-                                <span style={{fontWeight: 700}}>{catFinalS1}</span>
-                            </div>
-                            <div className="result-item-mini">
-                                <span style={{fontWeight: 500}}>Ahorro Estimado (AFAP):</span>
-                                <span style={{fontWeight: 700, color: '#008080'}}>{formatUYU(capitalS1)} UYU</span>
-                            </div>
+                            {/* Refinamiento Estético con Flex para espaciado elegante */}
+                            <ResultadoItem label="Aporte Base (Nominal)" value={`${formatUYU(datosClave.aporteBaseCaja)} UYU`} />
+                            <ResultadoItem label="Categoría Final" value={catFinalS1} />
+                            <ResultadoItem label="Ahorro Estimado (AFAP)" value={`${formatUYU(capitalS1)} UYU`} color="#008080" />
 
-                            <p style={{ fontSize: '0.85rem', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                <strong>Brecha Previsional:</strong> Tu ingreso estimado es <strong>inferior o igual</strong> a tu aporte base actual.
+                            <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: '#BCA49A', fontWeight: 500, borderTop: '1px dashed #ddd' }}>
+                                <strong>Brecha Previsional:</strong> Cubre el {porcentajeS1}% de tu aporte base (en términos educativos).
                             </p>
                         </div>
 
-                        {/* ESCENARIO 2: Proyección por Ascenso de Carrera (Máximo Educativo) - DISEÑO ÓPTIMO */}
+                        {/* ESCENARIO 2: Proyección por Ascenso de Carrera (Máximo Educativo) - DISEÑO ÓPTIMO PULIDO */}
                         <div className="scenario-card" style={{ 
                             flex: '1 1 45%', 
+                            minWidth: '250px',
                             border: '2px solid #008080', 
                             padding: '20px', 
                             borderRadius: '8px', 
-                            backgroundColor: '#e8f5e9' // Color de destaque
+                            backgroundColor: '#e8f5e9'
                         }}>
                             <h4 style={{ color: '#008080', borderBottom: '1px dashed #ddd', paddingBottom: '10px' }}>Escenario 2: Jubilación Proyectada (Máximo)</h4>
                             <p style={{ fontSize: '0.9rem', marginBottom: '15px', fontStyle: 'italic', color: '#333' }}>
-                                Progresión de categoría hasta la máxima.
+                                Progresión de categoría hasta la máxima posible.
                             </p>
 
-                            <div style={{textAlign: 'center', marginBottom: '15px'}}>
-                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#008080' }}>Ingreso Mensual Estimado</p>
+                            <div style={{textAlign: 'center', marginBottom: '20px', padding: '15px 0', border: '1px solid #008080', borderRadius: '5px', backgroundColor: '#E0FFFF'}}>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#008080' }}>Jubilación Mensual Estimada</p>
                                 <h4 style={{ margin: '5px 0', fontWeight: 900, fontSize: '1.8rem', color: '#008080' }}>
                                     {formatUYU(ingresoMensualS2)} UYU
                                 </h4>
                             </div>
 
-                            <div className="result-item-mini" style={{borderTop: '1px solid #eee', paddingTop: '10px'}}>
-                                <span style={{fontWeight: 500}}>Aporte Final Proyectado (Nominal):</span>
-                                <span style={{fontWeight: 700}}>{formatUYU(aporteFinalS2)} UYU</span>
-                            </div>
-                            <div className="result-item-mini">
-                                <span style={{fontWeight: 500}}>Categoría Final:</span>
-                                <span style={{fontWeight: 700}}>{catFinalS2}</span>
-                            </div>
-                            <div className="result-item-mini">
-                                <span style={{fontWeight: 500}}>Ahorro Estimado (AFAP):</span>
-                                <span style={{fontWeight: 700, color: '#008080'}}>{formatUYU(capitalS2)} UYU</span>
-                            </div>
+                            {/* Refinamiento Estético con Flex para espaciado elegante */}
+                            <ResultadoItem label="Aporte Final Proyectado (Nominal)" value={`${formatUYU(aporteFinalS2)} UYU`} />
+                            <ResultadoItem label="Categoría Final" value={catFinalS2} />
+                            <ResultadoItem label="Ahorro Estimado (AFAP)" value={`${formatUYU(capitalS2)} UYU`} color="#008080" />
 
-                            <p style={{ fontSize: '0.85rem', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                <strong>Brecha Previsional:</strong> Cubre el <strong>{porcentajeS2}%</strong> de tu aporte final. El resto debe ser cubierto.
+                            <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: '#008080', fontWeight: 500, borderTop: '1px dashed #ddd' }}>
+                                <strong>Brecha Previsional:</strong> Cubre el {porcentajeS2}% de tu aporte final (en términos educativos).
                             </p>
                         </div>
                     </div>
                     
                     {/* ACLARACIÓN DE LA REGLA DE AÑOS DE APORTE (TEXTO SOLICITADO SIN ASTIRISCOS) */}
                     <p style={{ marginTop: '25px', fontSize: '1rem', fontStyle: 'italic', color: '#008080', fontWeight: 600, borderLeft: '3px solid #008080', paddingLeft: '10px', backgroundColor: '#f0fff0' }}>
-                       💬 IMPORTANTE: La jubilación real en la Caja se calcula en base al promedio de años aportados en cada categoría.<br/>
-                       Estos escenarios muestran el rango posible entre mantener tu categoría actual (mínimo) y ascender hasta la máxima (máximo educativo).<br/>
+                       💬 **IMPORTANTE:** La jubilación real en la Caja se calcula en base al promedio de los años aportados en cada categoría.<br/>
+                       Estos escenarios muestran el rango posible entre mantener tu categoría actual (**MÍNIMO**) y ascender a la máxima (**MÁXIMO EDUCATIVO**).<br/>
                        Tu resultado real se ubicará dentro de este rango, según tu trayectoria profesional.
                     </p>
 
@@ -913,22 +908,22 @@ const CalculatorTabs: React.FC = () => {
                         <ol style={{ paddingLeft: '20px', fontSize: '0.9rem' }}>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
-                                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu ingreso estimado en el escenario de ascenso (<strong>{formatUYU(ingresoMensualS2)} UYU</strong>) representa un <strong>{porcentajeS2}%</strong> de tu aporte final. Esta diferencia entre lo que esperas ganar y lo que recibirás es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en la jubilación</strong>.
+                                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu jubilación estimada en el escenario de ascenso (**{formatUYU(ingresoMensualS2)} UYU**) representa un **{porcentajeS2}%** de tu aporte final. Esta diferencia entre lo que esperas ganar y lo que recibirás es la **Brecha Previsional**. La mayoría de las personas necesitan complementar este ingreso para **mantener su nivel de vida en la jubilación**.
                                 </p>
                             </li>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
-                                    <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema de seguridad social uruguayo está diseñado para proporcionar una <strong>base de sustentación</strong>. Es por eso que se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como <strong>Seguros de Renta Personal</strong> o <strong>Ahorro + Vida</strong>. 
+                                    <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema de seguridad social uruguayo está diseñado para proporcionar una **base de sustentación**. Es por eso que se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como **Seguros de Renta Personal** o **Ahorro + Vida**. 
                                 </p>
                             </li>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
-                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de <strong>{EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong> para acceder a la <strong>jubilación</strong> por edad.
+                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la **jubilación** por edad.
                                 </p>
                             </li>
                             <li style={{ marginBottom: '5px' }}>
                                 <p>
-                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{anosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. Es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta que se ajuste a tus metas.
+                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con **{anosRestantes} años** por delante, la **constancia** y el **interés compuesto** son tus mayores aliados. Es fundamental una **asesoría personalizada** para definir la mejor herramienta que se ajuste a tus metas.
                                 </p>
                             </li>
                         </ol>
@@ -947,31 +942,133 @@ const CalculatorTabs: React.FC = () => {
     const renderContent = () => {
         if (activeTab === 'datos') {
             return datosClave.tipoAporte === 'BPS' ? renderDatosClaveBPS() : renderDatosClaveCaja();
+        } else {
+            return datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCajaDual();
         }
-        return datosClave.tipoAporte === 'CAJA' ? renderProyeccionCajaDual() : renderProyeccionBPS();
     };
 
     return (
-        <div className="calculator-tabs-component" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 15px' }}>
-            <div className="header-tabs" style={{ display: 'flex', marginBottom: '20px' }}>
+        <div className="calculator-tabs-component" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+            {/* TABS Navigation */}
+            <div className="tab-navigation" style={{ display: 'flex', borderBottom: '2px solid #eee', marginBottom: '30px' }}>
                 <button 
-                    className={`tab-header ${activeTab === 'datos' ? 'active' : ''}`}
+                    className={`tab-button ${activeTab === 'datos' ? 'active' : ''}`}
                     onClick={() => setActiveTab('datos')}
-                    style={{ flex: 1, padding: '15px', border: 'none', borderBottom: activeTab === 'datos' ? '3px solid #008080' : '1px solid #ccc', backgroundColor: activeTab === 'datos' ? 'white' : '#f0f0f0', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 600, color: activeTab === 'datos' ? '#008080' : '#333' }}
+                    style={{ 
+                        padding: '15px 25px', 
+                        border: 'none', 
+                        backgroundColor: activeTab === 'datos' ? 'white' : '#f0f0f0', 
+                        borderBottom: activeTab === 'datos' ? '3px solid #008080' : '3px solid transparent', 
+                        fontWeight: activeTab === 'datos' ? 700 : 500,
+                        color: activeTab === 'datos' ? '#008080' : '#666',
+                        cursor: 'pointer',
+                        fontSize: '1.1rem',
+                        transition: 'all 0.2s',
+                        borderRadius: '8px 8px 0 0'
+                    }}
                 >
                     Tus Datos Clave
                 </button>
                 <button 
-                    className={`tab-header ${activeTab === 'proyeccion' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('proyeccion')}
-                    style={{ flex: 1, padding: '15px', border: 'none', borderBottom: activeTab === 'proyeccion' ? '3px solid #008080' : '1px solid #ccc', backgroundColor: activeTab === 'proyeccion' ? 'white' : '#f0f0f0', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 600, color: activeTab === 'proyeccion' ? '#008080' : '#333' }}
+                    className={`tab-button ${activeTab === 'proyeccion' ? 'active' : ''}`}
+                    onClick={handleCalculate} // Al intentar ir a Proyección, forzamos el cálculo
+                    disabled={isCalculating}
+                    style={{ 
+                        padding: '15px 25px', 
+                        border: 'none', 
+                        backgroundColor: activeTab === 'proyeccion' ? 'white' : '#f0f0f0', 
+                        borderBottom: activeTab === 'proyeccion' ? '3px solid #008080' : '3px solid transparent', 
+                        fontWeight: activeTab === 'proyeccion' ? 700 : 500,
+                        color: activeTab === 'proyeccion' ? '#008080' : '#666',
+                        cursor: 'pointer',
+                        fontSize: '1.1rem',
+                        transition: 'all 0.2s',
+                        borderRadius: '8px 8px 0 0'
+                    }}
                 >
                     Proyección
                 </button>
             </div>
-            {renderContent()}
+
+            {/* Content Area */}
+            <div className="tab-content">
+                {renderContent()}
+            </div>
+            
+            {/* CSS Ficticio para la simulación de estilos avanzados */}
+            <style>
+                {`
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                    color: #333;
+                }
+                .form-group input, .form-group select {
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    font-size: 1rem;
+                    box-sizing: border-box;
+                    transition: border-color 0.2s;
+                }
+                .form-group input:focus, .form-group select:focus {
+                    border-color: #008080;
+                    outline: none;
+                }
+                .info-text {
+                    display: block;
+                    margin-top: 5px;
+                    font-size: 0.85rem;
+                    color: #999;
+                    font-style: italic;
+                }
+                .caja-selector .caja-button {
+                    padding: 10px 20px;
+                    margin-right: 10px;
+                    border: 1px solid #008080;
+                    background-color: white;
+                    color: #008080;
+                    cursor: pointer;
+                    border-radius: 5px;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                }
+                .caja-selector .caja-button.active {
+                    background-color: #008080;
+                    color: white;
+                    font-weight: 700;
+                }
+                .aviso-final-note {
+                    padding: 15px;
+                    border-radius: 5px;
+                    border-left: 5px solid #008080;
+                    background-color: #e8f5e9;
+                    color: #333;
+                    font-size: 0.95rem;
+                }
+                @media (max-width: 768px) {
+                    .col-layout-datos-custom, .col-layout-proyeccion-custom {
+                        flex-direction: column;
+                    }
+                    .panel-left, .panel-right {
+                        min-width: 100% !important;
+                    }
+                    .dual-scenario-container {
+                        flex-direction: column;
+                    }
+                    .scenario-card {
+                        flex: 1 1 100% !important;
+                    }
+                }
+                `}
+            </style>
         </div>
     );
-}; // Cierre final del componente CalculatorTabs
+};
 
 export default CalculatorTabs;
