@@ -76,7 +76,29 @@ const calcularCapitalProyectadoConCrecimiento = (aporteMensual: number, anos: nu
     }
     return capital;
 };
-const simularResultados = (datos: DatosClaveExtendida): Resultados => initialResultados; // Implementación dummy
+
+const simularResultados = (datos: DatosClaveExtendida): Resultados => {
+    const anosRestantes = datos.edadRetiro - datos.edadActual;
+    const ingresoNominal = getAporteActual(datos);
+
+    if (datos.tipoAporte === 'BPS') {
+        const tasaReemplazo = 0.55; 
+        const ingresoMensualBase = ingresoNominal * tasaReemplazo;
+        
+        // Simulación de AFAP (si está activa)
+        const capitalTotal = datos.afapActiva 
+            ? calcularCapitalProyectadoConCrecimiento(ingresoNominal * 0.15, anosRestantes, 0.04, 0) 
+            : 0;
+        
+        return {
+            tasaReemplazoAplicada: tasaReemplazo,
+            ingresoMensual: Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoMensualBase),
+            capitalTotal: capitalTotal,
+        };
+    }
+
+    return initialResultados; 
+};
 
 
 // =========================================================================
@@ -89,6 +111,7 @@ const CalculatorTabs: React.FC = () => {
     const [isCalculating, setIsCalculating] = useState<boolean>(false);
     const [showBpsAporteWarning, setShowBpsAporteWarning] = useState<boolean>(false);
     const [ageServiceWarning, setAgeServiceWarning] = useState<boolean>(false); 
+    const [isCalculated, setIsCalculated] = useState<boolean>(false); 
 
     const [tempEdad, setTempEdad] = useState({
         edadActual: initialDatosClave.edadActual.toString(),
@@ -99,7 +122,14 @@ const CalculatorTabs: React.FC = () => {
     const añosRestantes = Math.max(0, datosClave.edadRetiro - datosClave.edadActual);
     const añosServicioTotalEstimado = datosClave.añosAporteActual + añosRestantes;
 
-    const resultados = useMemo(() => datosClave.tipoAporte === 'BPS' ? simularResultados(datosClave) : initialResultados, [datosClave]);
+    // Cálculo de resultados para BPS (se usa para renderizar en BPS Proyección)
+    const resultadosBPS = useMemo(() => simularResultados(datosClave), [datosClave]);
+    
+    
+    // Al cambiar la edad, resetea el estado de cálculo
+    useEffect(() => {
+        setIsCalculated(false);
+    }, [datosClave.edadActual, datosClave.edadRetiro, datosClave.añosAporteActual, datosClave.tipoAporte, datosClave.salarioPromedioBps, datosClave.aporteBaseCaja]);
 
     
     const handleEdadChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,6 +182,7 @@ const CalculatorTabs: React.FC = () => {
         
         if (getAporteActual(datosClave) <= 0) { 
             setShowBpsAporteWarning(true); 
+            setIsCalculated(false);
             return;
         }
 
@@ -169,6 +200,7 @@ const CalculatorTabs: React.FC = () => {
         setIsCalculating(true);
         setTimeout(() => {
             setActiveTab('proyeccion');
+            setIsCalculated(true); // Marca el cálculo como realizado
             setIsCalculating(false);
         }, 500); 
     }, [datosClave, isCalculating, añosServicioTotalEstimado]);
@@ -188,6 +220,16 @@ const CalculatorTabs: React.FC = () => {
             [name]: !prev[name]
         }));
     }, []);
+    
+    // Función: Controlar el cambio de pestaña
+    const handleTabChange = useCallback((tab: 'datos' | 'proyeccion') => {
+        if (tab === 'proyeccion' && activeTab === 'datos' && !isCalculated) {
+            // No permitir cambiar a 'Proyección' desde 'Datos' si no se ha calculado
+            return;
+        }
+        setActiveTab(tab);
+    }, [activeTab, isCalculated]);
+
 
 // =========================================================================
 // 2. COMPONENTES REUTILIZABLES (ProyeccionOptions y AsesorCard)
@@ -286,7 +328,7 @@ const CalculatorTabs: React.FC = () => {
                             <option value="AFAP REPUBLICA">AFAP República</option>
                         </select>
                         <span className="info-text" style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginTop: '5px' }}>
-                            Tu AFAP se considera para la proyección del capital acumulado.
+                            Tu AFAP se considera para la proyección del capital acumulado al retiro.
                         </span>
                     </div>
                 )}
@@ -322,39 +364,63 @@ const CalculatorTabs: React.FC = () => {
                 >
                     {isCalculating ? 'Calculando...' : 'Calcular Proyección'}
                 </button>
+                 {/* Mensaje de cálculo si se está en la pestaña de datos y ya se calculó */}
+                {activeTab === 'datos' && isCalculated && (
+                    <p style={{ marginTop: '10px', color: THEME_COLOR, fontWeight: 600, fontSize: '0.9rem' }}>
+                        ¡Cálculo realizado! Ve a la pestaña 'Proyección'.
+                    </p>
+                )}
 
             </div>
         );
     };
 
     // Componente AsesorCard (Ejemplo)
-    const AsesorCard: React.FC = () => (
-        <div style={{ padding: '20px', backgroundColor: '#EBF3F2', borderRadius: '8px', border: '1px solid #B4C6C4' }}>
-            {/*  - Placeholder para la imagen de la asesora */}
-            <h4 style={{ margin: 0, color: '#4B7770', borderBottom: '1px dashed #B4C6C4', paddingBottom: '10px' }}>
-                ¿Listo para Cerrar la Brecha?
-            </h4>
-            <p style={{ fontSize: '0.85rem', color: '#333', marginTop: '10px' }}>
-                Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Agenda una consulta:
-            </p>
-            <button 
-                 style={{ 
-                    width: '100%', 
-                    padding: '10px', 
-                    backgroundColor: '#00796B', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '5px', 
-                    fontSize: '1rem', 
-                    fontWeight: 600, 
-                    cursor: 'pointer',
-                    marginTop: '10px'
-                }}
-            >
-                Contactar Asesor
-            </button>
-        </div>
-    );
+    const AsesorCard: React.FC = () => {
+        const whatsappLink = `https://wa.me/+59899123456?text=Hola,%20me%20gustaría%20saber%20más%20sobre%20mi%20futuro%20previsional%20después%20de%20usar%20la%20calculadora.`;
+        const THEME_COLOR = '#4B7770';
+
+        return (
+            <div style={{ padding: '20px', backgroundColor: '#EBF3F2', borderRadius: '8px', border: '1px solid #B4C6C4', textAlign: 'center' }}>
+                <h4 style={{ margin: 0, color: THEME_COLOR, borderBottom: '1px dashed #B4C6C4', paddingBottom: '10px' }}>
+                    Asesoramiento Personalizado
+                </h4>
+                <p style={{ fontSize: '0.9rem', color: '#333', marginTop: '15px' }}>
+                    Soy **Lic. Jessica Paez**, tu asesora previsional. Esta simulación es el primer paso.
+                    Conozcamos tu caso en detalle para construir una estrategia a medida.
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '15px' }}>
+                    Teléfono: <a href="tel:+59899123456" style={{color: THEME_COLOR, textDecoration: 'none'}}>+598 99 123 456</a>
+                </p>
+                
+                <a 
+                    href={whatsappLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{ 
+                        width: '100%', 
+                        padding: '12px 15px', 
+                        backgroundColor: '#25D366', // Color de WhatsApp
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        fontSize: '1rem', 
+                        fontWeight: 600, 
+                        cursor: 'pointer',
+                        marginTop: '10px',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Icon" style={{width: '20px', height: '20px'}} />
+                    Contactar por WhatsApp
+                </a>
+            </div>
+        );
+    };
     
 // =========================================================================
 // 4. RENDERS ESPECÍFICOS DE PESTAÑAS (Inputs y Proyección)
@@ -421,7 +487,7 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                         </div>
-                        {/* --- NUEVO CAMPO: AÑOS APORTADOS --- */}
+                        {/* --- CAMPO: AÑOS APORTADOS --- */}
                         <div className="form-group third" style={{ flex: 1 }}>
                             <label htmlFor="añosAporteActual">Años de Aporte Acumulados:</label>
                             <input 
@@ -432,9 +498,9 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                             <span className="info-text">
-                                **Años restantes de aporte:** <strong>{añosRestantes} años</strong>.
+                                Años restantes de aporte: <strong>{añosRestantes} años</strong>.
                                 <br />
-                                **Servicio total estimado:** <strong>{añosServicioTotalEstimado} años</strong>.
+                                Servicio total estimado: <strong>{añosServicioTotalEstimado} años</strong>.
                             </span>
                         </div>
                     </div>
@@ -450,7 +516,7 @@ const CalculatorTabs: React.FC = () => {
                             onChange={handleInputChange}
                         />
                         <span className="info-text">
-                            **Nota Clave sobre BPS:** La simulación asume que este valor es su **Salario Base de Promedio Ajustado** sobre el cual se calcula la jubilación.
+                            Nota Clave sobre BPS: La simulación asume que este valor es su Salario Base de Promedio Ajustado sobre el cual se calcula la jubilación.
                         </span>
                     </div>
                     
@@ -467,8 +533,8 @@ const CalculatorTabs: React.FC = () => {
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
                             <ul>
-                                <li>Edad de retiro deseada: **{datosClave.edadRetiro} años** (Mínimo: {EDAD_MINIMA_RETIRO})</li>
-                                <li>Años de servicio estimado: **{añosServicioTotalEstimado} años** (Mínimo: {AÑOS_MINIMOS_SERVICIO})</li>
+                                <li>Edad de retiro deseada: {datosClave.edadRetiro} años (Mínimo: {EDAD_MINIMA_RETIRO})</li>
+                                <li>Años de servicio estimado: {añosServicioTotalEstimado} años (Mínimo: {AÑOS_MINIMOS_SERVICIO})</li>
                             </ul>
                             <span style={{display: 'block', marginTop: '5px'}}>La proyección es solo educativa.</span>
                         </div>
@@ -543,7 +609,7 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                         </div>
-                        {/* --- NUEVO CAMPO: AÑOS APORTADOS --- */}
+                        {/* --- CAMPO: AÑOS APORTADOS --- */}
                         <div className="form-group third" style={{ flex: 1 }}>
                             <label htmlFor="añosAporteActual">Años de Aporte Acumulados:</label>
                             <input 
@@ -554,9 +620,9 @@ const CalculatorTabs: React.FC = () => {
                                 onChange={handleEdadChange}
                             />
                             <span className="info-text">
-                                **Años restantes de aporte:** <strong>{añosRestantes} años</strong>.
+                                Años restantes de aporte: <strong>{añosRestantes} años</strong>.
                                 <br />
-                                **Servicio total estimado:** <strong>{añosServicioTotalEstimado} años</strong>.
+                                Servicio total estimado: <strong>{añosServicioTotalEstimado} años</strong>.
                             </span>
                         </div>
                     </div>
@@ -605,8 +671,8 @@ const CalculatorTabs: React.FC = () => {
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
                             <ul>
-                                <li>Edad de retiro deseada: **{datosClave.edadRetiro} años** (Mínimo: {EDAD_MINIMA_RETIRO})</li>
-                                <li>Años de servicio estimado: **{añosServicioTotalEstimado} años** (Mínimo: {AÑOS_MINIMOS_SERVICIO})</li>
+                                <li>Edad de retiro deseada: {datosClave.edadRetiro} años (Mínimo: {EDAD_MINIMA_RETIRO})</li>
+                                <li>Años de servicio estimado: {añosServicioTotalEstimado} años (Mínimo: {AÑOS_MINIMOS_SERVICIO})</li>
                             </ul>
                             <span style={{display: 'block', marginTop: '5px'}}>La proyección es solo educativa.</span>
                         </div>
@@ -620,20 +686,97 @@ const CalculatorTabs: React.FC = () => {
         );
     };
 
-    // Render BPS Proyección (dummy)
+    // Render BPS Proyección (ACTUALIZADO)
     const renderProyeccionBPS = () => {
-        // Asume la lógica de proyección BPS
+        const THEME_COLOR = '#4B7770';
+        const NEUTRAL_BORDER_COLOR = '#B4C6C4';
+
+        const { ingresoMensual, capitalTotal, tasaReemplazoAplicada } = resultadosBPS;
+        const ingresoNominal = datosClave.salarioPromedioBps;
+        
+        // CÁLCULO DE LA BRECHA
+        const porcentajeCobertura = Math.min(100, (ingresoMensual / ingresoNominal) * 100);
+        const brechaFaltante = Math.max(0, 100 - porcentajeCobertura).toFixed(0); 
+        const ajusteWarning = ingresoMensual > (ingresoNominal * tasaReemplazoAplicada);
+        
+        const ResultadoItem: React.FC<{ label: string, value: string, color?: string }> = ({ label, value, color }) => (
+            <div className="result-item-mini" style={{display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px dashed #eee'}}>
+                <span style={{fontWeight: 500, fontSize: '0.9rem', color: '#666'}}>{label}:</span> 
+                <span style={{fontWeight: 700, color: color || '#333', fontSize: '1rem'}}>{value}</span>
+            </div>
+        );
+
+
         return (
-            <div className="proyeccion-bps" style={{textAlign: 'center', color: '#666', padding: '50px', border: '1px dashed #ddd'}}>
-                <h2>Proyección BPS en Desarrollo</h2>
-                <p>La proyección detallada de BPS será implementada aquí.</p>
-                <AsesorCard />
+            <div className="panel-container" style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px', margin: '0 auto' }}>
+                <div className="panel-left" style={{ width: '100%' }}> 
+                    <h3 className="datos-clave-title" style={{ color: THEME_COLOR, marginBottom: '25px' }}>Proyección BPS - Escenario Base (Simulación Educativa)</h3>
+
+                    {/* ESCENARIO BPS */}
+                    <div className="scenario-card" style={{ 
+                        border: `1px solid ${NEUTRAL_BORDER_COLOR}`, 
+                        padding: '20px', 
+                        borderRadius: '8px', 
+                        backgroundColor: 'white'
+                    }}>
+                        <h4 style={{ color: '#666', borderBottom: `1px dashed ${NEUTRAL_BORDER_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
+                            Jubilación Estimada BPS (Tasa {Math.round(tasaReemplazoAplicada * 100)}%)
+                            <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
+                                (?)
+                            </span>
+                        </h4>
+                        
+                        {/* JUBILACIÓN RESULT BOX */}
+                        <div style={{textAlign: 'center', marginBottom: '15px', padding: '10px 0', border: `1px solid ${NEUTRAL_BORDER_COLOR}`, borderRadius: '5px', backgroundColor: '#F5F5F5'}}>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Jubilación Mensual Estimada al Retiro (Ajustada)</p>
+                            <h4 style={{ margin: '3px 0', fontWeight: 900, fontSize: '1.6rem', color: '#333' }}>
+                                {formatUYU(ingresoMensual)} UYU
+                            </h4>
+                        </div>
+
+                        {ajusteWarning && (
+                            <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
+                                ¡ATENCIÓN! El cálculo base fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
+                            </div>
+                        )}
+
+                        <ResultadoItem label="Salario Base Usado" value={`${formatUYU(ingresoNominal)} UYU`} />
+                        <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalTotal)} UYU`} color={THEME_COLOR} />
+                        
+                        <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
+                            Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltante}% de tu Salario Base.
+                        </p>
+                        <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCobertura.toFixed(0)}% del salario base.</span>
+                    </div>
+
+                    {/* ACLARACIÓN */}
+                    <div className="aviso-importante-pulido" style={{ 
+                        marginTop: '25px', 
+                        padding: '15px', 
+                        borderLeft: `5px solid ${THEME_COLOR}`, 
+                        backgroundColor: '#EBF3F2', 
+                        borderRadius: '0 8px 8px 0',
+                        fontSize: '0.95rem',
+                        color: '#333'
+                    }}>
+                       <p style={{ margin: 0, fontWeight: 600, color: THEME_COLOR }}>
+                           💬 IMPORTANTE: La jubilación real en BPS depende del promedio de sus últimos 20 años de ingresos ajustados por el Índice Medio de Salarios.
+                       </p>
+                       <p style={{ margin: '10px 0 0 0' }}>
+                           Esta simulación usa una tasa de reemplazo simplificada del 55% sobre el salario base ingresado.
+                       </p>
+                    </div>
+                </div>
+
+                <div className="panel-right" style={{ width: '100%', maxWidth: '300px', margin: '0 auto' }}>
+                    <AsesorCard />
+                </div>
             </div>
         )
     };
     
 
-    // Render Caja Proyección (con diseño en 2 columnas paralelas) - AJUSTADO CON DELICADEZA
+    // Render Caja Proyección 
     const renderProyeccionCajaDual = () => {
         const anosRestantes = datosClave.edadRetiro - datosClave.edadActual;
         
@@ -649,7 +792,7 @@ const CalculatorTabs: React.FC = () => {
         const capitalS2 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteBaseS1, anosRestantes, TASA_CRECIMIENTO_ANUAL, FACTOR_ASCENSION_ANUAL) : 0;
         
         
-        // --- CÁLCULO DE LA JUBILACIÓN ESTIMADA (FIEL A NORMATIVA EDUCATIVA) ---
+        // --- CÁLCULO DE LA JUBILACIÓN ESTIMADA ---
         let ingresoBaseCalculadoS1 = aporteBaseS1 * CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN;
         const ingresoMensualS1 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, ingresoBaseCalculadoS1);
         const ajusteWarningS1 = ingresoMensualS1 > ingresoBaseCalculadoS1;
@@ -675,19 +818,19 @@ const CalculatorTabs: React.FC = () => {
             </div>
         );
 
-        // --- COLORES DEFINIDOS PARA LA DELICADEZA ---
+        // --- COLORES DEFINIDOS ---
         const NEUTRAL_BORDER_COLOR = '#B4C6C4';
         const THEME_COLOR = '#4B7770';
         const MIN_RESULT_BG = '#F5F5F5'; 
         const MAX_RESULT_BG = '#EBF3F2'; 
 
 
-        // --- LAYOUT DE 2 COLUMNAS VERTICALES PARALELAS PARA RESULTADOS ---
+        // --- LAYOUT AHORA ES EN UNA SOLA COLUMNA, UNO ENCIMA DEL OTRO ---
         return (
-            <div className="panel-container" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap', maxWidth: '1000px', margin: '0 auto' }}>
+            <div className="panel-container" style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px', margin: '0 auto' }}>
                 
-                <div className="panel-left" style={{ flex: '2 1 60%', minWidth: '300px' }}>
-                    <h3 className="datos-clave-title" style={{ color: THEME_COLOR, marginBottom: '15px' }}>Resultados de la Proyección (Simulación Educativa Fiel)</h3>
+                <div className="panel-left" style={{ width: '100%' }}> {/* Ocupa el 100% del ancho */}
+                    <h3 className="datos-clave-title" style={{ color: THEME_COLOR, marginBottom: '25px' }}>Resultados de la Proyección (Simulación Educativa Fiel)</h3>
 
                     <div className="dual-scenario-container" style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
                         
@@ -696,10 +839,10 @@ const CalculatorTabs: React.FC = () => {
                             border: `1px solid ${NEUTRAL_BORDER_COLOR}`, 
                             padding: '20px', 
                             borderRadius: '8px', 
-                            backgroundColor: 'white' // <-- FONDO BLANCO
+                            backgroundColor: 'white'
                         }}>
                             <h4 style={{ color: '#666', borderBottom: `1px dashed ${NEUTRAL_BORDER_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
-                                Escenario 1: Jubilación Base (Tasa **{Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN * 100)}%**) 
+                                Escenario 1: Jubilación Base (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MIN * 100)}%) 
                                 <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
                                     (?)
                                 </span>
@@ -707,7 +850,7 @@ const CalculatorTabs: React.FC = () => {
                             
                             {/* JUBILACIÓN RESULT BOX - Color discreto */}
                             <div style={{textAlign: 'center', marginBottom: '15px', padding: '10px 0', border: `1px solid ${NEUTRAL_BORDER_COLOR}`, borderRadius: '5px', backgroundColor: MIN_RESULT_BG}}>
-                                <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Jubilación Mensual Estimada (Ajustada)</p>
+                                <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Jubilación Mensual Estimada al Retiro (Ajustada)</p>
                                 <h4 style={{ margin: '3px 0', fontWeight: 900, fontSize: '1.6rem', color: '#333' }}>
                                     {formatUYU(ingresoMensualS1)} UYU
                                 </h4>
@@ -715,16 +858,16 @@ const CalculatorTabs: React.FC = () => {
 
                             {ajusteWarningS1 && (
                                 <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
-                                    ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS1)} UYU) fue inferior. Su pensión se ajustó al **Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU)**.
+                                    ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS1)} UYU) fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                                 </div>
                             )}
 
                             <ResultadoItem label="Aporte Base (Nominal)" value={`${formatUYU(aporteBaseS1)} UYU`} />
                             <ResultadoItem label="Categoría Final" value={catFinalS1} />
-                            <ResultadoItem label="Ahorro Estimado (AFAP)" value={`${formatUYU(capitalS1)} UYU`} color={THEME_COLOR} />
+                            <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalS1)} UYU`} color={THEME_COLOR} />
 
                             <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
-                                **Brecha Previsional Faltante:** Te faltaría cubrir un **{brechaFaltanteS1}%** de tu Aporte Base.
+                                Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltanteS1}% de tu Aporte Base.
                             </p>
                             <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCoberturaS1.toFixed(0)}% del aporte.</span>
                         </div>
@@ -734,10 +877,10 @@ const CalculatorTabs: React.FC = () => {
                             border: `2px solid ${THEME_COLOR}`, 
                             padding: '20px', 
                             borderRadius: '8px', 
-                            backgroundColor: 'white' // <-- FONDO BLANCO
+                            backgroundColor: 'white'
                         }}>
                             <h4 style={{ color: THEME_COLOR, borderBottom: `1px dashed ${THEME_COLOR}`, paddingBottom: '10px', marginBottom: '15px' }}>
-                                Escenario 2: Jubilación Proyectada (Tasa **{Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX * 100)}%**)
+                                Escenario 2: Jubilación Proyectada (Tasa {Math.round(CAJA_SCENARIO_DATA.TASA_SUSTITUCION_MAX * 100)}%)
                                 <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación." style={{ marginLeft: '8px', fontSize: '0.9rem', cursor: 'help', color: '#666', fontWeight: 400 }}>
                                     (?)
                                 </span>
@@ -745,7 +888,7 @@ const CalculatorTabs: React.FC = () => {
                             
                             {/* JUBILACIÓN RESULT BOX - Color de tema (fondo suave) */}
                             <div style={{textAlign: 'center', marginBottom: '15px', padding: '10px 0', border: `1px solid ${THEME_COLOR}`, borderRadius: '5px', backgroundColor: MAX_RESULT_BG}}>
-                                <p style={{ margin: 0, fontSize: '0.8rem', color: THEME_COLOR }}>Jubilación Mensual Estimada (Ajustada)</p>
+                                <p style={{ margin: 0, fontSize: '0.8rem', color: THEME_COLOR }}>Jubilación Mensual Estimada al Retiro (Ajustada)</p>
                                 <h4 style={{ margin: '3px 0', fontWeight: 900, fontSize: '1.6rem', color: THEME_COLOR }}>
                                     {formatUYU(ingresoMensualS2)} UYU
                                 </h4>
@@ -753,16 +896,16 @@ const CalculatorTabs: React.FC = () => {
 
                             {ajusteWarningS2 && (
                                 <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '5px', marginBottom: '15px', fontSize: '0.85rem' }}>
-                                    ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS2)} UYU) fue inferior. Su pensión se ajustó al **Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU)**.
+                                    ¡ATENCIÓN! El cálculo base ({formatUYU(ingresoBaseCalculadoS2)} UYU) fue inferior. Su pensión se ajustó al Mínimo Educativo ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                                 </div>
                             )}
 
                             <ResultadoItem label="Aporte Final Proyectado (Nominal)" value={`${formatUYU(aporteFinalS2)} UYU`} />
                             <ResultadoItem label="Categoría Final" value={catFinalS2} />
-                            <ResultadoItem label="Ahorro Estimado (AFAP)" value={`${formatUYU(capitalS2)} UYU`} color={THEME_COLOR} />
+                            <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalS2)} UYU`} color={THEME_COLOR} />
 
                             <p style={{ fontSize: '0.85rem', marginTop: '15px', paddingTop: '10px', color: THEME_COLOR, fontWeight: 500 }}>
-                                **Brecha Previsional Faltante:** Te faltaría cubrir un **{brechaFaltanteS2}%** de tu Aporte Final Proyectado.
+                                Brecha Previsional Faltante: Te faltaría cubrir un {brechaFaltanteS2}% de tu Aporte Final Proyectado.
                             </p>
                             <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Tu ingreso cubre el {porcentajeCoberturaS2.toFixed(0)}% del aporte.</span>
                         </div>
@@ -779,7 +922,7 @@ const CalculatorTabs: React.FC = () => {
                         color: '#333'
                     }}>
                        <p style={{ margin: 0, fontWeight: 600, color: THEME_COLOR }}>
-                           💬 **IMPORTANTE:** La jubilación real en la Caja se calcula en base al promedio de los años aportados en cada categoría.
+                           💬 IMPORTANTE: La jubilación real en la Caja se calcula en base al promedio de los años aportados en cada categoría.
                        </p>
                        <p style={{ margin: '10px 0 0 0' }}>
                            Estos escenarios reflejan el rango de resultados posibles. Tu resultado real estará entre estos valores, según tu trayectoria profesional.
@@ -789,7 +932,7 @@ const CalculatorTabs: React.FC = () => {
                 </div>
                 
                 {/* Panel derecho con AsesorCard */}
-                <div className="panel-right" style={{ flex: '1 1 30%', minWidth: '250px' }}>
+                <div className="panel-right" style={{ width: '100%', maxWidth: '300px', margin: '0 auto' }}>
                     <AsesorCard /> 
                 </div>
             </div>
@@ -801,18 +944,30 @@ const CalculatorTabs: React.FC = () => {
         <div className="calculator-tabs-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '20px'}}>
             <div className="tab-buttons" style={{ display: 'flex', borderBottom: '2px solid #ddd', marginBottom: '20px' }}>
                 <button 
-                    onClick={() => setActiveTab('datos')}
+                    onClick={() => handleTabChange('datos')}
                     className={activeTab === 'datos' ? 'active-tab' : ''}
                     style={{ padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600, borderBottom: activeTab === 'datos' ? '3px solid #4B7770' : 'none', color: activeTab === 'datos' ? '#4B7770' : '#666' }}
                 >
                     Tus Datos Clave
                 </button>
                 <button 
-                    onClick={() => setActiveTab('proyeccion')}
+                    onClick={() => handleTabChange('proyeccion')} 
                     className={activeTab === 'proyeccion' ? 'active-tab' : ''}
-                    style={{ padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600, borderBottom: activeTab === 'proyeccion' ? '3px solid #4B7770' : 'none', color: activeTab === 'proyeccion' ? '#4B7770' : '#666' }}
+                    disabled={activeTab === 'datos' && !isCalculated} 
+                    style={{ 
+                        padding: '10px 20px', 
+                        border: 'none', 
+                        background: 'none', 
+                        cursor: (activeTab === 'datos' && !isCalculated) ? 'not-allowed' : 'pointer', 
+                        fontWeight: 600, 
+                        borderBottom: activeTab === 'proyeccion' ? '3px solid #4B7770' : 'none', 
+                        color: (activeTab === 'datos' && !isCalculated) ? '#ccc' : (activeTab === 'proyeccion' ? '#4B7770' : '#666') 
+                    }}
                 >
                     Proyección
+                    {activeTab === 'datos' && !isCalculated && (
+                        <span style={{marginLeft: '10px', fontSize: '0.75rem', color: '#ff5555'}}>(Calcular Primero)</span>
+                    )}
                 </button>
             </div>
 
@@ -823,6 +978,16 @@ const CalculatorTabs: React.FC = () => {
                 {activeTab === 'proyeccion' && (
                     datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCajaDual()
                 )}
+            </div>
+            
+            {/* --- DISCLAIMER Y COPYRIGHT AÑADIDO/ACTUALIZADO --- */}
+            <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #ddd', textAlign: 'center', fontSize: '0.8rem', color: '#666' }}>
+                <p style={{ margin: '5px 0' }}>
+                    **© 2025 Jubilación Plus - Desarrollado por Lic. Jessica Paez.**
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                    **Disclaimer:** Simulación con fines educativos. Consulta a la institución pertinente por los datos oficiales.
+                </p>
             </div>
         </div>
     );
