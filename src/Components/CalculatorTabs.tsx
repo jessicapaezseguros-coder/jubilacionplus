@@ -12,7 +12,7 @@ const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000;
 
 // Tasas de sustitución (didácticas)
 const TASA_SUSTITUCION_MIN_CAJA = 0.55; 
-// TASA DIDÁCTICA ALTA CORREGIDA A 150% (antes 200%)
+// TASA DIDÁCTICA ALTA CORREGIDA A 150%
 const TASA_SUSTITUCION_OPTIMIZADA_CAJA = 1.50; 
 const TASA_SUSTITUCION_BPS = 0.55; 
 
@@ -326,10 +326,8 @@ const CalculatorTabs: React.FC = () => {
                 </p>
 
                 <div className="logo-container">
-                    {/* Se usa el logo cargado por el usuario. Asegúrate que la ruta sea correcta. 
-                        Si estás en un proyecto Vite/React, usa la sintaxis de importación si es necesario: 
-                        <img src="/ruta/a/logo_jubilacion_plus_1024.png" alt="J Jubilación Plus Logo" className="brand-logo" />
-                        Por ahora, mantendremos el texto para evitar problemas de rutas de archivos.
+                    {/* El logo se muestra aquí con texto por simplicidad. Si deseas la imagen:
+                    <img src="/ruta/a/logo_jubilacion_plus_1024.png" alt="J Jubilación Plus Logo" className="brand-logo" /> 
                     */}
                     <h3 className="logo-text">
                         J JUBILACIÓN+
@@ -565,7 +563,7 @@ const CalculatorTabs: React.FC = () => {
                     )}
                     
                     {ageServiceWarning && ( 
-                        <div className="aviso-final-note warning-style-custom" style={{ backgroundColor: COLOR_SUAVE_WARNING }}>
+                        <div className="warning-style-custom">
                             ADVERTENCIA: La Ley 20.130 exige <strong>mínimo {EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong>. 
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
@@ -665,7 +663,7 @@ const CalculatorTabs: React.FC = () => {
                     <span className="info-text">Valores basados en la escala de Cuota Unificada vigente.</span>
 
                     {ageServiceWarning && ( 
-                        <div className="aviso-final-note warning-style-custom" style={{ backgroundColor: COLOR_SUAVE_WARNING }}>
+                        <div className="warning-style-custom">
                             ADVERTENCIA: La Ley 20.130 exige <strong>mínimo {EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong>. 
                             <br />
                             <span style={{fontWeight: 'bold'}}>Tu configuración actual no cumple con uno o ambos requisitos:</span>
