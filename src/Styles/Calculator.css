@@ -1,0 +1,735 @@
+/* src/Styles/Calculator.css */
+
+/*
+* 1. RESET Y BASE
+*/
+.calculator-tabs-wrapper {
+    max-width: 1200px;
+    margin: 40px auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+}
+
+/*
+* 2. NAVEGACIÓN DE PESTAÑAS (TABS)
+*/
+.tab-navigation {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 12px 20px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+
+.tab-button:hover {
+    color: #007bff;
+}
+
+.tab-button.active {
+    color: #007bff;
+    border-bottom: 3px solid #007bff;
+}
+
+.calcular-primero-text {
+    font-size: 0.75em;
+    font-weight: 400;
+    margin-left: 5px;
+    color: #ff5722;
+}
+
+/*
+* 3. LAYOUT PRINCIPAL (Datos Clave y Proyección)
+*/
+.panel-container {
+    display: flex;
+    gap: 30px;
+    padding: 10px 0;
+}
+
+/* Layout para datos clave: 70% izquierda, 30% derecha (Opciones) */
+.col-layout-datos .panel-left {
+    flex: 2; 
+    min-width: 0; 
+}
+.col-layout-datos .panel-right {
+    flex: 1; 
+    min-width: 280px;
+}
+
+
+/* Layout para resultados: 65% izquierda (Resultados), 35% derecha (Asesor Card) */
+.projection-container .panel-left-results {
+    flex: 3;
+    min-width: 0;
+}
+.projection-container .panel-right-card {
+    flex: 1.7;
+    min-width: 300px;
+}
+
+.datos-clave-title,
+.analisis-title {
+    color: #333;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/*
+* 4. ESTILOS DE FORMULARIO Y INPUTS
+*/
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    flex: 1;
+    margin-bottom: 15px;
+}
+
+.form-group.third {
+    flex: 1 1 30%;
+}
+
+.form-group.input-full-width {
+    flex: none; 
+    width: 100%;
+}
+
+label.input-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.95em;
+}
+
+input[type="number"],
+input[type="text"],
+select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus,
+select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.info-text {
+    display: block;
+    font-size: 0.8em;
+    color: #777;
+    margin-top: 5px;
+}
+
+.note-clave {
+    font-style: italic;
+    color: #999;
+}
+
+/* Selector BPS/CAJA */
+.caja-selector-group {
+    display: flex;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    width: fit-content;
+}
+
+.caja-selector-group .tab-button {
+    padding: 8px 15px;
+    font-size: 0.9em;
+    font-weight: 500;
+    border-bottom: none;
+    margin: 0;
+    border-right: 1px solid #ddd;
+}
+
+.caja-selector-group .tab-button:last-child {
+    border-right: none;
+}
+
+.caja-selector-group .tab-button.active-group {
+    background-color: #e0f7ff;
+    color: #007bff;
+    font-weight: 600;
+}
+
+/*
+* 5. SECCIÓN DE CATEGORÍAS DE APORTE (CAJA)
+*/
+.categoria-title {
+    margin-top: 20px;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.categoria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.aporte-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.aporte-button:hover {
+    border-color: #a0c4ff;
+    background-color: #e6f0ff;
+}
+
+.aporte-button.active {
+    border-color: #007bff;
+    background-color: #e0f7ff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+}
+
+.aporte-value {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 4px;
+}
+
+/*
+* 6. PROYECCION OPTIONS PANEL
+*/
+.proyeccion-options-panel {
+    background-color: #f7f9fc;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    height: 100%; /* Ajuste importante para que ocupe todo el espacio */
+}
+
+.options-title {
+    color: #007bff;
+    font-size: 1.4em;
+    margin-bottom: 20px;
+}
+
+.aporte-base-display {
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.aporte-display-value {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #28a745;
+    margin: 5px 0 0;
+}
+
+.afap-checkbox-container {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.afap-checkbox-container:hover {
+    background-color: #dee2e6;
+}
+
+.afap-checkbox-container input[type="checkbox"] {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+}
+
+.calculate-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #007bff;
+    color: white;
+    font-size: 1.1em;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    margin-top: 20px;
+}
+
+.calculate-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.calculate-button:disabled {
+    background-color: #a0c4ff;
+    cursor: not-allowed;
+}
+
+/*
+* 7. ESTILOS DE RESULTADOS Y ADVERTENCIAS
+*/
+.results-wrapper-internal {
+    padding-right: 20px;
+}
+
+.simulacion-pendiente {
+    text-align: center;
+    padding: 50px 20px;
+    background-color: #f7f9fc;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.simulacion-pendiente h3 {
+    color: #ff9800;
+    margin-bottom: 10px;
+}
+
+.go-to-data-button {
+    padding: 10px 20px;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-weight: 600;
+}
+
+/* Contenedores de Escenarios Caja */
+.caja-scenarios-grid {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.scenario-card {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    flex: 1;
+}
+
+.scenario-card.scenario-2 {
+    border: 2px solid #007bff; /* Destacar el escenario optimizado */
+    background-color: #eef7ff;
+}
+
+.scenario-title {
+    color: #007bff;
+    font-size: 1.2em;
+    border-bottom: 1px dashed #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.estimated-pension-box {
+    text-align: center;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.pension-label {
+    font-size: 0.9em;
+    color: #155724;
+    margin: 0;
+}
+
+.pension-value {
+    font-size: 2.2em;
+    color: #155724;
+    font-weight: 800;
+    margin: 5px 0 0;
+}
+
+.result-item-mini {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dotted #eee;
+    font-size: 0.9em;
+}
+
+.result-value {
+    font-weight: 600;
+}
+
+.result-value.theme-color {
+    color: #28a745;
+}
+
+.brecha-text {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #dc3545;
+}
+
+/* Estilos de Advertencia y Notas */
+.aviso-final-note {
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.warning-style {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+}
+
+.error-style {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.warning-style-custom {
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 8px;
+    background-color: #fcf8e3;
+    border: 1px solid #faebcc;
+    color: #8a6d3b;
+    font-size: 0.9em;
+}
+
+.warning-style-custom ul {
+    margin-top: 10px;
+    padding-left: 20px;
+}
+
+.aviso-importante-pulido {
+    background-color: #e9f7fe;
+    border: 1px solid #a0d3f8;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-size: 0.95em;
+}
+
+.aviso-importante-pulido .note-title {
+    font-weight: 700;
+    color: #007bff;
+    margin: 0 0 5px 0;
+}
+
+/*
+* 8. ANÁLISIS EDUCATIVO (IA)
+*/
+.analisis-educativo-card {
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.analisis-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 0.9em;
+}
+
+.analisis-table th, .analisis-table td {
+    padding: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.analisis-table th {
+    background-color: #e9ecef;
+    color: #495057;
+    text-align: left;
+    font-weight: 600;
+}
+
+.analisis-table td {
+    background-color: #fff;
+}
+
+.analisis-table .text-right {
+    text-align: right;
+}
+
+.analisis-table .result-value {
+    color: #007bff;
+    font-weight: 700;
+}
+
+.analisis-text {
+    line-height: 1.6;
+    color: #444;
+}
+
+.analisis-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #e9ecef;
+    padding-top: 15px;
+    margin-top: 20px;
+}
+
+.analisis-footer-title {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin: 0;
+}
+
+.ia-badge {
+    background-color: #28a745;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    border: none;
+}
+
+/*
+* 9. ASESOR CARD (LIC. JESSICA PAEZ)
+*/
+.asesor-card {
+    background: linear-gradient(145deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    min-height: 100%; /* Asegura que la tarjeta se extienda */
+    box-sizing: border-box;
+}
+
+.card-title {
+    font-size: 1.6em;
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.card-text {
+    font-size: 1em;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+/* Estilización del logo */
+.logo-container-custom {
+    margin: 25px 0;
+    padding: 20px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.logo-wrapper-custom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.j-logo-stylized {
+    position: relative;
+    font-size: 3.5em;
+    font-weight: 900;
+    color: white;
+    margin-right: 5px;
+    line-height: 1;
+    z-index: 2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.j-logo-stylized::after {
+    content: '+';
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    font-size: 0.5em;
+    font-weight: bold;
+    color: #ffc107; 
+}
+
+.logo-text-custom {
+    font-size: 2em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: white;
+    margin: 0;
+}
+
+.slogan-text-custom {
+    font-family: 'Brush Script MT', ' cursive', sans-serif; /* Intento de fuente manuscrita */
+    font-size: 1.8em; 
+    color: #ffc107;
+    margin: -10px 0 20px 0; 
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-style: italic;
+    font-weight: 600;
+}
+
+.lic-name-custom {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin: 15px 0 5px;
+}
+
+.lic-role-custom {
+    font-size: 0.9em;
+    font-weight: 400;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.contact-number-custom {
+    font-size: 1.8em;
+    font-weight: 900;
+    margin: 15px 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 5px;
+    border-radius: 5px;
+    letter-spacing: 1px;
+}
+
+.whatsapp-button {
+    display: block;
+    width: 90%;
+    margin: 20px auto 15px;
+    padding: 12px;
+    border-radius: 30px;
+    text-decoration: none;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1em;
+    transition: background-color 0.3s;
+}
+
+.whatsapp-button:hover {
+    background-color: #128c7e !important; /* WhatsApp Darker Green */
+}
+
+.disclaimer-text {
+    font-size: 0.75em;
+    margin-top: 15px;
+    opacity: 0.7;
+}
+
+/*
+* 10. FOOTER
+*/
+footer {
+    padding: 15px 20px 0;
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+}
+
+.footer-disclaimer {
+    font-size: 0.8em;
+    color: #999;
+}
+
+/*
+* 11. MEDIA QUERIES (Responsividad)
+*/
+@media (max-width: 992px) {
+    .panel-container {
+        flex-direction: column;
+    }
+    
+    .col-layout-datos .panel-right {
+        order: -1; /* Mueve las opciones arriba en móviles */
+    }
+
+    .caja-scenarios-grid {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 600px) {
+    .calculator-tabs-wrapper {
+        margin: 20px 10px;
+        padding: 15px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-group.third {
+        flex: none;
+        width: 100%;
+    }
+    
+    .estimated-pension-box {
+        padding: 10px;
+    }
+
+    .pension-value {
+        font-size: 1.8em;
+    }
+
+    .categoria-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .logo-text-custom {
+        font-size: 1.6em;
+    }
+    
+    .j-logo-stylized {
+        font-size: 3em;
+    }
+
+}

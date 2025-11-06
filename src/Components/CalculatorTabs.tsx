@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import '../../src/Styles/Calculator.css'; // ¡Importación corregida!
 
 // =========================================================================
 // 1. CONSTANTES Y TIPOS
@@ -12,14 +13,13 @@ const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000;
 
 // Tasas de sustitución (didácticas)
 const TASA_SUSTITUCION_MIN_CAJA = 0.55; 
-// TASA DIDÁCTICA ALTA CORREGIDA A 150%
-const TASA_SUSTITUCION_OPTIMIZADA_CAJA = 1.50; 
+// TASA DE SUSTITUCIÓN MÁXIMA REALISTA de CJPPU (82.5%)
+const TASA_SUSTITUCION_OPTIMIZADA_CAJA = 0.825; 
 const TASA_SUSTITUCION_BPS = 0.55; 
 
 
-// --- COLORES (Se dejan solo para el uso interno del componente) ---
+// --- COLORES ---
 const COLOR_WHATSAPP = '#25D366'; 
-const COLOR_SUAVE_WARNING = '#FFF3CD'; 
 
 
 // Categorías de la Caja
@@ -79,7 +79,9 @@ const getAporteActual = (datos: DatosClaveExtendida) => datos.tipoAporte === 'BP
 const calcularCapitalProyectadoConCrecimiento = (aporteMensual: number, anos: number, tasaCrecimiento: number, factorAscension: number) => {
     let capital = 0;
     for (let i = 0; i < anos; i++) {
+        // Multiplicador del aporte: simula crecimiento de la base de aporte (salario/categoría)
         let aporteAjustado = aporteMensual * Math.pow(1 + tasaCrecimiento, i) * Math.pow(1 + factorAscension, i);
+        // Capitalización: se capitaliza el aporte anual (aporteAjustado * 12) por los años restantes hasta el retiro
         capital += aporteAjustado * 12 * Math.pow(1 + tasaCrecimiento, anos - 1 - i);
     }
     return capital;
@@ -97,6 +99,7 @@ const simularResultados = (datos: DatosClaveExtendida): Resultados => {
     if (datos.tipoAporte === 'BPS') {
         const ingresoMensualBase = ingresoNominal * TASA_SUSTITUCION_BPS;
         
+        // El 5% del salario va a AFAP (para simulación didáctica)
         const capitalTotal = datos.afapActiva 
             ? calcularCapitalProyectadoConCrecimiento(ingresoNominal * 0.05, anosRestantes, 0.04, 0) 
             : 0;
@@ -108,7 +111,7 @@ const simularResultados = (datos: DatosClaveExtendida): Resultados => {
         };
     }
 
-    // Retorna resultados base para Caja 
+    // Retorna resultados base para Caja (aunque la lógica detallada se hace en renderProyeccionCaja)
     return initialResultados; 
 };
 
@@ -136,7 +139,7 @@ const CalculatorTabs: React.FC = () => {
 
     const resultadosBPS = useMemo(() => simularResultados(datosClave), [datosClave]);
     
-    
+    // Resetear 'calculado' cuando cambian los datos.
     useEffect(() => {
         setIsCalculated(false);
     }, [datosClave.edadActual, datosClave.edadRetiro, datosClave.añosAporteActual, datosClave.tipoAporte, datosClave.salarioPromedioBps, datosClave.aporteBaseCaja]);
@@ -325,24 +328,28 @@ const CalculatorTabs: React.FC = () => {
                     Esta simulación es una excelente base, pero tu futuro requiere una estrategia personalizada. Para maximizar tu ahorro, asegurar tu calidad de vida en el retiro y recibir un plan preciso:
                 </p>
 
-                <div className="logo-container">
-                    {/* El logo se muestra aquí con texto por simplicidad. Si deseas la imagen:
-                    <img src="/ruta/a/logo_jubilacion_plus_1024.png" alt="J Jubilación Plus Logo" className="brand-logo" /> 
-                    */}
-                    <h3 className="logo-text">
-                        J JUBILACIÓN+
-                    </h3>
-                    <p className="slogan-text">
-                        Anticipate
+                <div className="logo-container-custom">
+                    {/* Recreación del logo tipográfico con la J estilizada */}
+                    <div className="logo-wrapper-custom">
+                        {/* J con flechita blanca triangulito y la luz detrás - Usando CSS */}
+                        <div className="j-logo-stylized">J</div>
+                        <h3 className="logo-text-custom">
+                            JUBILACIÓN+
+                        </h3>
+                    </div>
+
+                    <p className="slogan-text-custom">
+                       Anticipate
                     </p>
-                    <p className="lic-name">
+                    
+                    <p className="lic-name-custom">
                         LIC. JESSICA PAEZ
                     </p>
-                    <p className="lic-role">
+                    <p className="lic-role-custom">
                         ASESORA TÉCNICA EN SEGUROS PERSONALES
                     </p>
 
-                    <div className="contact-number">
+                    <div className="contact-number-custom">
                         097113110
                     </div>
                 </div>
@@ -388,7 +395,7 @@ const CalculatorTabs: React.FC = () => {
         let jubilacionPuraS1 = SALARIO_BASE_S1 * TASA_SUSTITUCION_MIN_CAJA; 
         const ingresoMensualS1 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, jubilacionPuraS1);
 
-        // ESCENARIO 2: Optimizado (Máxima, Tasa 150% Didáctica)
+        // ESCENARIO 2: Máximo Realista (Tasa 82.5% Oficial)
         let jubilacionPuraS2 = SALARIO_BASE_S2 * TASA_SUSTITUCION_OPTIMIZADA_CAJA;
         const ingresoMensualS2 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, jubilacionPuraS2);
         
@@ -411,7 +418,10 @@ const CalculatorTabs: React.FC = () => {
 
         if (datos.tipoAporte === 'CAJA') {
             analisisText += `Tu Caja de Profesionales ofrece flexibilidad. En el <strong>Escenario Base (Categoría ${datos.categoriaCajaSeleccionada.nombre})</strong>, tu jubilación estimada con una tasa didáctica del <strong>${Math.round(TASA_SUSTITUCION_MIN_CAJA * 100)}%</strong> sobre tu aporte es de <strong>${formatUYU(ingresoMensualS1)} UYU</strong>. `;
-            analisisText += `Al optimizar tu carrera profesional para alcanzar la <strong>${categoriaFinalS2.nombre} (Escenario Optimizado)</strong>, tu jubilación podría alcanzar <strong>${formatUYU(ingresoMensualS2)} UYU</strong> (simulando una tasa del ${Math.round(TASA_SUSTITUCION_OPTIMIZADA_CAJA * 100)}% que refleja el máximo potencial de ingreso). `;
+            
+            // Texto actualizado para reflejar el tope del 82.5% y la base de los 3 años
+            analisisText += `Al optimizar tu carrera profesional para alcanzar la <strong>${categoriaFinalS2.nombre} (Escenario Máximo Realista)</strong>, tu jubilación podría alcanzar el <strong>${Math.round(TASA_SUSTITUCION_OPTIMIZADA_CAJA * 100)}%</strong> del sueldo ficto de esa categoría, lo que representa <strong>${formatUYU(ingresoMensualS2)} UYU</strong>. Recuerda que la CJPPU basa el cálculo en el promedio del sueldo ficto de los últimos tres años, por lo que este escenario requiere maximizar tu categoría en esa fase.`;
+            
             if (datos.afapActiva) {
                 analisisText += `Tu AFAP podría aportar entre <strong>${formatUYU(capitalS1)} UYU</strong> (Escenario 1) y <strong>${formatUYU(capitalS2)} UYU</strong> (Escenario 2) de capital acumulado. `;
             }
@@ -421,9 +431,9 @@ const CalculatorTabs: React.FC = () => {
             if (datos.edadActual < 40) {
                 analisisText += `<strong>Fase Inicial:</strong> Tienes un gran margen para planificar tu ascenso de categoría y acumular un capital significativo. ¡El tiempo es tu mayor aliado!`;
             } else if (datos.edadActual < 55) {
-                analisisText += `<strong>Fase Crucial:</strong> Estás en una etapa ideal para evaluar la rentabilidad de ascender de categoría anualmente y asegurar una mejor tasa de reemplazo.`;
+                analisisText += `<strong>Fase Crucial:</strong> Estás en una etapa ideal para evaluar la rentabilidad de ascender de categoría anualmente. Es clave asegurar la máxima categoría en tus últimos años.`;
             } else {
-                analisisText += `<strong>Fase Final:</strong> Cada decisión sobre tu categoría actual es crítica para el cálculo final. La consolidación de aportes es la prioridad.`;
+                analisisText += `<strong>Fase Final:</strong> Cada decisión sobre tu categoría actual es crítica para el cálculo final, que se promedia sobre los últimos 3 años. La consolidación de aportes es la prioridad.`;
             }
         }
         
@@ -491,13 +501,13 @@ const CalculatorTabs: React.FC = () => {
                     <div className="caja-selector-group">
                         <button 
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
-                            className={`tab-button ${datosClave.tipoAporte === 'BPS' ? 'active' : ''}`}
+                            className={`tab-button ${datosClave.tipoAporte === 'BPS' ? 'active-group' : ''}`}
                         >
                             BPS
                         </button>
                         <button 
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'CAJA' }))}
-                            className={`tab-button ${datosClave.tipoAporte === 'CAJA' ? 'active' : ''}`}
+                            className={`tab-button ${datosClave.tipoAporte === 'CAJA' ? 'active-group' : ''}`}
                         >
                             Caja de Profesionales
                         </button>
@@ -592,13 +602,13 @@ const CalculatorTabs: React.FC = () => {
                     <div className="caja-selector-group">
                         <button 
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'BPS' }))}
-                            className={`tab-button ${datosClave.tipoAporte === 'BPS' ? 'active' : ''}`}
+                            className={`tab-button ${datosClave.tipoAporte === 'BPS' ? 'active-group' : ''}`}
                         >
                             BPS
                         </button>
                         <button 
                             onClick={() => setDatosClave(prev => ({ ...prev, tipoAporte: 'CAJA' }))}
-                            className={`tab-button ${datosClave.tipoAporte === 'CAJA' ? 'active' : ''}`}
+                            className={`tab-button ${datosClave.tipoAporte === 'CAJA' ? 'active-group' : ''}`}
                         >
                             Caja de Profesionales
                         </button>
@@ -700,7 +710,17 @@ const CalculatorTabs: React.FC = () => {
             );
         }
 
-        return datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCaja();
+        return (
+            // AQUI ESTÁ EL LAYOUT DE DOS COLUMNAS EN PANTALLAS GRANDES
+            <div className="panel-container projection-container">
+                <div className="panel-left-results"> 
+                    {datosClave.tipoAporte === 'BPS' ? renderProyeccionBPS() : renderProyeccionCaja()}
+                </div>
+                <div className="panel-right-card">
+                    <AsesorCard />
+                </div>
+            </div>
+        );
     };
 
 
@@ -721,54 +741,47 @@ const CalculatorTabs: React.FC = () => {
         );
 
         return (
-            <div className="panel-container projection-container">
-                <div className="panel-left"> 
-                    <h3 className="datos-clave-title">Proyección BPS - Escenario Base (Simulación Educativa)</h3>
+            <div className="results-wrapper-internal">
+                <h3 className="datos-clave-title">Proyección BPS - Escenario Base (Simulación Educativa)</h3>
 
-                    <div className="scenario-card">
-                        <h4 className="scenario-title">
-                            Jubilación Estimada BPS (Tasa {Math.round(tasaReemplazoAplicada * 100)}%)
-                            <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación.">
-                                (?)
-                            </span>
+                <div className="scenario-card">
+                    <h4 className="scenario-title">
+                        Jubilación Estimada BPS (Tasa {Math.round(tasaReemplazoAplicada * 100)}%)
+                        <span className="tooltip-help" title="Tasa: porcentaje del ingreso/aporte que se proyecta como jubilación.">
+                            (?)
+                        </span>
+                    </h4>
+                    
+                    <div className="estimated-pension-box">
+                        <p className="pension-label">Jubilación Mensual Estimada al Retiro (Ajustada)</p>
+                        <h4 className="pension-value">
+                            {formatUYU(ingresoMensual)} UYU
                         </h4>
-                        
-                        <div className="estimated-pension-box">
-                            <p className="pension-label">Jubilación Mensual Estimada al Retiro (Ajustada)</p>
-                            <h4 className="pension-value">
-                                {formatUYU(ingresoMensual)} UYU
-                            </h4>
+                    </div>
+
+                    {ajusteWarning && (
+                        <div className="aviso-final-note warning-style-custom">
+                            ¡ATENCIÓN! El cálculo base ({formatUYU(calculoPuro)}) fue inferior. Su pensión se ajustó al <strong>Mínimo Educativo</strong> ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
                         </div>
+                    )}
 
-                        {ajusteWarning && (
-                            <div className="aviso-final-note warning-style-custom">
-                                ¡ATENCIÓN! El cálculo base ({formatUYU(calculoPuro)}) fue inferior. Su pensión se ajustó al <strong>Mínimo Educativo</strong> ({formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU).
-                            </div>
-                        )}
-
-                        <ResultadoItem label="Salario Base Usado" value={`${formatUYU(ingresoNominal)} UYU`} />
-                        <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalTotal)} UYU`} colorClass="theme-color" />
-                        
-                        
-                        <p className="brecha-text">
-                            Brecha Previsional Faltante: Te faltaría cubrir un <strong>{brechaFaltante}%</strong> de tu Salario Base.
-                        </p>
-                        <span className="info-text">Tu ingreso cubre el {porcentajeCobertura.toFixed(0)}% del salario base.</span>
-                    </div>
-
-                    <div className="aviso-importante-pulido">
-                       <p className="note-title">
-                           💬 IMPORTANTE: La jubilación real en BPS depende del promedio de sus últimos 20 años de ingresos ajustados por el Índice Medio de Salarios.
-                       </p>
-                       <p className="note-text">
-                           Esta simulación usa una tasa de reemplazo simplificada del 55% sobre el salario base ingresado.
-                       </p>
-                    </div>
-
+                    <ResultadoItem label="Salario Base Usado" value={`${formatUYU(ingresoNominal)} UYU`} />
+                    <ResultadoItem label="Ahorro Estimado (AFAP al Retiro)" value={`${formatUYU(capitalTotal)} UYU`} colorClass="theme-color" />
+                    
+                    
+                    <p className="brecha-text">
+                        Brecha Previsional Faltante: Te faltaría cubrir un <strong>{brechaFaltante}%</strong> de tu Salario Base.
+                    </p>
+                    <span className="info-text">Tu ingreso cubre el {porcentajeCobertura.toFixed(0)}% del salario base.</span>
                 </div>
 
-                <div className="panel-right">
-                    <AsesorCard />
+                <div className="aviso-importante-pulido">
+                    <p className="note-title">
+                        💬 IMPORTANTE: La jubilación real en BPS depende del promedio de sus últimos 20 años de ingresos ajustados por el Índice Medio de Salarios.
+                    </p>
+                    <p className="note-text">
+                        Esta simulación usa una tasa de reemplazo simplificada del 55% sobre el salario base ingresado.
+                    </p>
                 </div>
             </div>
         );
@@ -785,14 +798,21 @@ const CalculatorTabs: React.FC = () => {
         const anosRestantes = datosClave.edadRetiro - datosClave.edadActual;
         
         // CÁLCULO DE CAPITAL AFAP
+        // Base: se mantiene el aporte actual. 
         const capitalS1 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteBaseS1 * 0.05, anosRestantes, TASA_CRECIMIENTO_ANUAL, 0) : 0;
+        // Optimizado: se asume ascenso de categoría, aplicando un factor de ascensión didáctico al aporte AFAP
         const capitalS2 = datosClave.afapActiva ? calcularCapitalProyectadoConCrecimiento(aporteFinalS2 * 0.05, anosRestantes, TASA_CRECIMIENTO_ANUAL, FACTOR_ASCENSION_ANUAL) : 0;
         
         // LÓGICA DE JUBILACIÓN
-        let jubilacionPuraS1 = aporteBaseS1 * TASA_SUSTITUCION_MIN_CAJA; 
+        const SALARIO_BASE_S1 = aporteBaseS1; 
+        const SALARIO_BASE_S2 = aporteFinalS2; 
+
+        // ESCENARIO 1: Mínimo Esperado (Tasa 55%)
+        let jubilacionPuraS1 = SALARIO_BASE_S1 * TASA_SUSTITUCION_MIN_CAJA; 
         const ingresoMensualS1 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, jubilacionPuraS1);
 
-        let jubilacionPuraS2 = aporteFinalS2 * TASA_SUSTITUCION_OPTIMIZADA_CAJA; // Tasa 150% didáctica
+        // ESCENARIO 2: Máximo Realista (Tasa 82.5% Oficial)
+        let jubilacionPuraS2 = SALARIO_BASE_S2 * TASA_SUSTITUCION_OPTIMIZADA_CAJA; 
         const ingresoMensualS2 = Math.max(MINIMO_INGRESOMENSUAL_EDUCATIVO, jubilacionPuraS2); 
         
         const ResultadoBox: React.FC<{ scenario: number, baseValue: number, finalValue: number, categoria: typeof CATEGORIAS_CAJA[number], capital: number, tasa: number, title: string }> = ({ scenario, baseValue, finalValue, categoria, capital, tasa, title }) => {
@@ -811,7 +831,7 @@ const CalculatorTabs: React.FC = () => {
             return (
                 <div className={`scenario-card scenario-${scenario}`}>
                     <h4 className="scenario-title">
-                        Escenario {scenario}: {title} (Tasa {Math.round(tasa * 100)}% Didáctica)
+                        Escenario {scenario}: {title} (Tasa {Math.round(tasa * 100)}% {scenario === 2 ? 'Tope CJPPU' : 'Didáctica'})
                     </h4>
                     
                     <div className="estimated-pension-box">
@@ -840,10 +860,10 @@ const CalculatorTabs: React.FC = () => {
         }
 
         return (
-            <div className="panel-container projection-container">
-                <div className="panel-left"> 
-                    <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Educativa Fiel)</h3>
+            <div className="results-wrapper-internal">
+                <h3 className="datos-clave-title">Resultados de la Proyección (Simulación Educativa Fiel)</h3>
 
+                <div className="caja-scenarios-grid">
                     <ResultadoBox
                         scenario={1}
                         baseValue={aporteBaseS1}
@@ -861,24 +881,20 @@ const CalculatorTabs: React.FC = () => {
                         categoria={categoriaFinalS2}
                         capital={capitalS2}
                         tasa={TASA_SUSTITUCION_OPTIMIZADA_CAJA} 
-                        title="Jubilación Proyectada (Máximo Educativo)"
+                        title="Jubilación Proyectada (Máximo Realista)"
                     />
-
-                    <div className="aviso-importante-pulido">
-                       <p className="note-title">
-                           💬 IMPORTANTE: La jubilación real en la Caja se calcula en base al promedio de los años aportados en cada categoría.
-                       </p>
-                       <p className="note-text">
-                           Estos escenarios muestran el rango posible entre mantener tu categoría actual (<strong>MÍNIMO</strong>) y ascender a la máxima (<strong>MÁXIMO EDUCATIVO</strong>). Tu resultado real se ubicará dentro de este rango, según tu trayectoria profesional.
-                       </p>
-                    </div>
-
-                    <AnalisisEducativo datos={datosClave} />
                 </div>
 
-                <div className="panel-right">
-                    <AsesorCard />
+                <div className="aviso-importante-pulido">
+                    <p className="note-title">
+                        💬 IMPORTANTE: La jubilación real en la Caja se calcula en base al promedio del sueldo ficto de los últimos tres años de actividad.
+                    </p>
+                    <p className="note-text">
+                        Estos escenarios muestran el rango posible entre mantener tu categoría actual (<strong>BASE</strong>) y ascender a la máxima (<strong>MÁXIMO REALISTA</strong>). Tu resultado real se ubicará dentro de este rango, según tu trayectoria profesional.
+                    </p>
                 </div>
+
+                <AnalisisEducativo datos={datosClave} />
             </div>
         );
     };
@@ -889,7 +905,6 @@ const CalculatorTabs: React.FC = () => {
 
     return (
         <div className="calculator-tabs-wrapper">
-            {/* Solo se incluyen las pestañas y el contenido. El encabezado principal se maneja externamente. */}
             <div className="tab-navigation">
                 <button 
                     onClick={() => handleTabChange('datos')}
@@ -910,6 +925,15 @@ const CalculatorTabs: React.FC = () => {
                 {activeTab === 'datos' && renderDatosClave()}
                 {activeTab === 'proyeccion' && renderProyeccion()}
             </main>
+             {/* FOOTER CORREGIDO FINAL */}
+            <footer>
+                <p className="footer-disclaimer">
+                    © 2025 Jubilación Plus - Desarrollado por Lic. Jessica Paez.
+                </p>
+                <p className="footer-disclaimer">
+                    Disclaimer: Simulación con fines educativos. Consulta a la institucion correpsondiente por datos oficiales.
+                </p>
+            </footer>
         </div>
     );
 };
