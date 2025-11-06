@@ -2,10 +2,11 @@
 
 import React from 'react';
 import './App.css';
-// CORRECCIÓN CRÍTICA DE MAYÚSCULAS/MINÚSCULAS:
-// Se cambia 'Components' por 'components' para compatibilidad con el servidor Linux de Netlify.
-import Header from "./components/Header"; 
-import CalculatorTabs from './components/CalculatorTabs'; 
+
+// CORRECCIÓN FINAL: Se añade la extensión .tsx para resolver la sensibilidad
+// a mayúsculas y minúsculas y asegurar la resolución en Netlify/Linux.
+import Header from "./components/Header.tsx"; 
+import CalculatorTabs from './components/CalculatorTabs.tsx'; 
 
 function App() {
   return (
@@ -14,7 +15,6 @@ function App() {
       <main>
         <CalculatorTabs />
       </main>
-      {/* El Footer se movió dentro de CalculatorTabs.tsx para la estructura de Flexbox */}
     </div>
   );
 }
