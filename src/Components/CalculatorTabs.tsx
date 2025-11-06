@@ -145,7 +145,7 @@ const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
         capitalProyectado = calcularCapitalProyectado(aporteActual, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
     }
 
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (JUBILACIÓN BASE BPS/Caja)
     
     // *** LÓGICA DE TASA DE REEMPLAZO DINÁMICA (BPS vs CAJA) ***
     const tasaReemplazo = datos.tipoAporte === 'BPS' ? TASA_REEMPLAZO_BPS : TASA_REEMPLAZO_CAJA_SIMULADA;
@@ -647,7 +647,11 @@ const CalculatorTabs: React.FC = () => {
         // Generación del Mensaje Contextual
         let SimulationMessage: string;
         if (datosClave.tipoAporte === 'CAJA') {
-            SimulationMessage = `Simulación basada en la fórmula de la Caja de Profesionales (tasa promedio ${resultados.tasaReemplazoAplicada * 100} % del aporte final).`;
+            SimulationMessage = `Simulación basada en la fórmula de la Caja de Profesionales (tasa promedio ${resultados.tasaReemplazoAplicada * 100} % del aporte).`;
+            
+            // *** AÑADIR LA ACLARACIÓN DEL MANTENIMIENTO DE CATEGORÍA AQUÍ ***
+            SimulationMessage += ` **Importante:** La jubilación real de la Caja depende de los años que aportás en cada categoría. **Este modelo asume que mantenés la categoría actual hasta el final de tu carrera.**`;
+            
         } else {
             // Incluye BPS y cualquier otro régimen que use la tasa de 55%
             SimulationMessage = `Simulación basada en la tasa de reemplazo promedio del ${resultados.tasaReemplazoAplicada * 100} % sobre el salario base.`;
@@ -663,7 +667,7 @@ const CalculatorTabs: React.FC = () => {
         // Mensaje de advertencia para el ajuste del mínimo (solo BPS)
         const WarningMessage = (
             <div className="aviso-final-note" style={{ backgroundColor: '#FFF3CD', borderLeftColor: '#FFC107', color: '#856404', marginTop: '15px', marginBottom: '15px' }}>
-                ¡ATENCIÓN! El cálculo base para este nivel de aporte es de **{formatUYU(resultados.ingresoBaseCalculado)} UYU**. Tu pensión se ajustaría al mínimo legal/educativo de **{formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU**.
+                ¡ATENCIÓN! El cálculo base para este nivel de aporte es de **{formatUYU(resultados.ingresoBaseCalculado)} UYU**. Tu **monto de retiro** se ajustaría al mínimo legal/educativo de **{formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU**.
             </div>
         );
         
@@ -678,12 +682,12 @@ const CalculatorTabs: React.FC = () => {
                             <span className="result-value-nowrap" style={{ fontWeight: 700 }}>{resultados.ahorroTotal} UYU</span>
                         </div>
                         <div className="result-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', marginTop: '10px' }}>
-                            {/* TÍTULO CORREGIDO: SE ELIMINA LA REFERENCIA A RENTA AFAP */}
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>Ingreso Mensual Estimado en Retiro (Pensión Base {datosClave.tipoAporte}):</span>
+                            {/* TEXTO CORREGIDO: "Jubilación Base" en lugar de "Pensión Base" */}
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>Ingreso Mensual Estimado en Retiro (Jubilación Base {datosClave.tipoAporte}):</span>
                             <span className="result-value-nowrap" style={{ fontWeight: 800, fontSize: '1.3rem', color: resultados.ajustePorMinimo ? '#ff6600' : '#008080' }}>{resultados.ingresoMensual} UYU</span>
                         </div>
                         
-                        {/* *** IMPLEMENTACIÓN DEL MENSAJE CONTEXTUAL *** */}
+                        {/* *** IMPLEMENTACIÓN DEL MENSAJE CONTEXTUAL (REVISADO) *** */}
                         <p style={{ marginTop: '15px', fontSize: '0.9rem', fontStyle: 'italic', color: '#666' }}>
                            💬 {SimulationMessage}
                         </p>
@@ -701,9 +705,10 @@ const CalculatorTabs: React.FC = () => {
                         <ol style={{ paddingLeft: '20px', fontSize: '0.9rem' }}>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
+                                    {/* TEXTO CORREGIDO: "monto de retiro" en lugar de "pensión" */}
                                     <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu proyección de ingreso mensual estimada en <strong>{resultados.ingresoMensual} UYU</strong> 
                                     {AnalysisText} 
-                                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en el retiro</strong>.
+                                    representa solo el <strong>{resultados.porcentajeAporte}%</strong> de tu aporte actual (asumiendo tu aporte actual de {formatUYU(aporteActual)} UYU como tu nivel de vida deseado). Esta diferencia entre lo que esperas ganar y lo que realmente recibirás como **monto de retiro** es la <strong>Brecha Previsional</strong>. La mayoría de las personas necesitan complementar este ingreso para <strong>mantener su nivel de vida en la jubilación</strong>.
                                 </p>
                             </li>
                             <li style={{ marginBottom: '15px' }}>
@@ -713,7 +718,8 @@ const CalculatorTabs: React.FC = () => {
                             </li>
                             <li style={{ marginBottom: '15px' }}>
                                 <p>
-                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la jubilación por edad. Tu planificación debe estar enfocada en cumplir estos requisitos **además** de la meta de ahorro.
+                                    {/* TEXTO CORREGIDO: "jubilación" en lugar de "pensión" */}
+                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> Recuerda que la nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la **jubilación** por edad. Tu planificación debe estar enfocada en cumplir estos requisitos **además** de la meta de ahorro.
                                 </p>
                             </li>
                             <li style={{ marginBottom: '5px' }}>
