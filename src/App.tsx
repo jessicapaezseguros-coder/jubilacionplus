@@ -1,18 +1,20 @@
 // src/App.tsx
 
 import React from 'react';
-import './Styles/Calculator.css'; 
-
-import Header from './Components/Header'; 
-import CalculatorTabs from './Components/CalculatorTabs';
+import './App.css';
+// CORRECCIÓN CRÍTICA DE MAYÚSCULAS/MINÚSCULAS:
+// Se cambia 'Components' por 'components' para compatibilidad con el servidor Linux de Netlify.
+import Header from "./components/Header"; 
+import CalculatorTabs from './components/CalculatorTabs'; 
 
 function App() {
   return (
-    <div className="app-container">
-      
+    <div className="App">
       <Header />
-      <CalculatorTabs />
-      
+      <main>
+        <CalculatorTabs />
+      </main>
+      {/* El Footer se movió dentro de CalculatorTabs.tsx para la estructura de Flexbox */}
     </div>
   );
 }
