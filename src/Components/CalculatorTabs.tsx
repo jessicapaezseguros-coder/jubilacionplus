@@ -668,4 +668,106 @@ const CalculatorTabs: React.FC = () => {
                             borderRadius: '5px', 
                             marginBottom: '20px', 
                             color: '#F44336',
-                            fontWeight:
+                            fontWeight: 600
+                        }}>
+                            ¡ATENCIÓN! El cálculo base para tu nivel de aporte es de **{formatUYU(ingresoBaseReal)} UYU**. Tu pensión **se ajustaría al mínimo legal de {formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU**.
+                        </div>
+                    )}
+
+                    {/* 2. ANÁLISIS EDUCATIVO (Módulos de Insight) */}
+                    <h3 className="datos-clave-title" style={{ marginTop: '30px', borderBottom: 'none' }}>Análisis Educativo y Previsional</h3>
+                    
+                    <div className="analysis-insights-container" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+
+                        {/* INSIGHT 1: BRECHA PREVISIONAL */}
+                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
+                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>1. La Brecha Previsional (Foco Educativo):</h4>
+                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                Tu proyección de ingreso mensual estimada representa solo el **{resultados.porcentajeAporte}%** de tu aporte actual (asumiendo tu aporte actual de **{formatUYU(aporteActual)} UYU** como tu nivel de vida deseado). Esta diferencia es la **Brecha Previsional**. Es fundamental complementarla para **mantener tu calidad de vida** en el retiro.
+                            </p>
+                        </div>
+
+                        {/* INSIGHT 2: POR QUÉ COMPLEMENTAR */}
+                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
+                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>2. ¿Por qué Complementar? (Estrategia y Profundidad):</h4>
+                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                El sistema estatal ofrece una **base de sustentación**. La **Renta AFAP** se calcula sobre tu capital acumulado y está sujeta a la ley de anualidades. Por ello, se recomienda enfáticamente complementar con herramientas de ahorro privado como **Seguros de Renta Personal** o **Ahorro + Vida**, que ofrecen rendimientos optimizados y blindaje. {AnalysisText}
+                            </p>
+                        </div>
+
+                        {/* INSIGHT 3: REQUISITOS LEGALES */}
+                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
+                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>3. Requisitos Legales (Ley 20.130):</h4>
+                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                La nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la jubilación por edad. Tu planificación debe enfocarse en cumplir estos requisitos **además** de tu meta de ahorro.
+                            </p>
+                        </div>
+
+                        {/* INSIGHT 4: ACCIÓN PRIORITARIA */}
+                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
+                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>4. Acción Prioritaria (Etapa de Potenciación):</h4>
+                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                ¡Estás en la etapa ideal! Con **{añosRestantes} años** por delante, la **constancia** y el **interés compuesto** son tus mayores aliados. Es fundamental una **asesoría personalizada** para definir la mejor herramienta que se ajuste a tus metas (sea **Renta, Ahorro + Vida** u otra).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* PANEL DERECHO: ASESORÍA (30%) */}
+                <div className="panel-right" style={{ flex: 1, minWidth: '300px' }}>
+                    <AsesorCard />
+                </div>
+            </div>
+        );
+    };
+    
+    // Función de renderizado principal
+    const renderContent = () => {
+        if (activeTab === 'datos') {
+            return datosClave.tipoAporte === 'BPS' ? renderDatosClaveBPS() : renderDatosClaveCaja();
+        }
+        return renderProyeccion();
+    };
+
+    return (
+        // Estilos para hacer el componente responsive y centrado en PC
+        <div className="calculator-tabs-component" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 15px' }}>
+            <div className="header-tabs" style={{ display: 'flex', marginBottom: '20px' }}>
+                <button 
+                    className={`tab-header ${activeTab === 'datos' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('datos')}
+                    style={{ 
+                        flex: 1, 
+                        padding: '15px', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        backgroundColor: activeTab === 'datos' ? '#008080' : '#ddd',
+                        color: activeTab === 'datos' ? 'white' : '#333',
+                        fontWeight: 600
+                    }}
+                >
+                    Tus Datos Clave
+                </button>
+                <button 
+                    className={`tab-header ${activeTab === 'proyeccion' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('proyeccion')}
+                    style={{ 
+                        flex: 1, 
+                        padding: '15px', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        backgroundColor: activeTab === 'proyeccion' ? '#008080' : '#ddd',
+                        color: activeTab === 'proyeccion' ? 'white' : '#333',
+                        fontWeight: 600,
+                        marginLeft: '5px'
+                    }}
+                >
+                    Proyección
+                </button>
+            </div>
+            {renderContent()}
+        </div>
+    );
+};
+
+export default CalculatorTabs;
