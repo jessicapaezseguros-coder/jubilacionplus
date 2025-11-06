@@ -28,19 +28,35 @@ interface DatosClave {
     afapSeleccionada: string;
 }
 
-// Tipos de Resultados de Proyección (ACTUALIZADA)
+// Tipos de Resultados de Proyección (ACTUALIZADA para ambos escenarios)
 interface ResultadosProyeccion {
-    ahorroTotal: string; 
-    ingresoMensual: string; 
-    porcentajeAporte: string; 
+    // Escenario 1: Mínimo Esperado (Base actual)
+    escenario1: {
+        ahorroTotal: string; 
+        ingresoMensual: string; 
+        porcentajeAporte: string; 
+        ingresoBaseReal: number; // Para el chequeo de la advertencia de mínimo
+        aporteBase: number; // Aporte base usado
+        categoria: string;
+    };
+    // Escenario 2: Máximo Esperado (Ascenso)
+    escenario2: {
+        ahorroTotal: string; 
+        ingresoMensual: string; 
+        porcentajeAporte: string; 
+        ingresoBaseReal: number;
+        aporteBase: number; // Aporte base usado
+        categoria: string;
+    } | null; // Null si es BPS
+    
     simulacionRealizada: boolean;
-    ingresoMensualCalculado: number; // Nuevo campo para el chequeo de la advertencia
 }
 
 // Constantes de Simulación
 const TASA_CRECIMIENTO_ANUAL = 0.04; // 4% de rendimiento AFAP/Ahorro simulado
 const TASA_REEMPLAZO_BPS_CAJA = 0.55; // Tasa de reemplazo simulada (55% del promedio)
 const MINIMO_INGRESOMENSUAL_EDUCATIVO = 20000; // Valor de piso para simulación (representa mínimo jubilatorio)
+const AÑOS_POR_CATEGORIA_ASCENSO = 3; // Para la simulación de ascenso de carrera
 
 // LÍMITES LEGALES (Ley 20.130) para fines de validación
 const EDAD_MINIMA_RETIRO = 65; // Mínimo legal de edad para jubilarse en Uruguay
@@ -81,11 +97,16 @@ const initialDatosClave: DatosClave = {
 };
 
 const initialResultados: ResultadosProyeccion = {
-    ahorroTotal: '0',
-    ingresoMensual: '0',
-    porcentajeAporte: '0',
+    escenario1: {
+        ahorroTotal: '0',
+        ingresoMensual: '0',
+        porcentajeAporte: '0',
+        ingresoBaseReal: 0,
+        aporteBase: 0,
+        categoria: '',
+    },
+    escenario2: null,
     simulacionRealizada: false,
-    ingresoMensualCalculado: 0, // Inicializado
 };
 
 // =========================================================================
@@ -106,58 +127,135 @@ const getAporteActual = (datos: DatosClave): number => {
 };
 
 // Simulación de Capital Proyectado (Fórmula de Capitalización Compuesta simplificada)
+// Nota: La fórmula fue modificada para simular el aporte al inicio del período.
 const calcularCapitalProyectado = (aporteMensual: number, años: number, tasaAnual: number): number => {
     const aporteAnual = aporteMensual * 12;
     if (tasaAnual === 0) {
         return aporteAnual * años;
     }
     const futureValueFactor = (Math.pow(1 + tasaAnual, años) - 1) / tasaAnual;
-    // Multiplicamos por (1 + tasaAnual) para simular el aporte realizado al inicio del período
     return aporteAnual * futureValueFactor * (1 + tasaAnual); 
+};
+
+/**
+ * Función para calcular resultados de un escenario dado un aporte base.
+ * @param aporteBase - El aporte base para el cálculo del 55%.
+ * @param añosParaCalculo - Los años restantes de aporte.
+ * @param afapActiva - Si se considera el aporte a AFAP.
+ * @returns Los resultados formateados para el escenario.
+ */
+const calcularEscenario = (aporteBase: number, añosParaCalculo: number, afapActiva: boolean, esBps: boolean, categoriaNombre: string = ''): ResultadosProyeccion['escenario1'] => {
+    
+    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
+    let capitalProyectado = 0;
+    if (afapActiva) {
+        // Mejorar la simulación del aporte a AFAP para BPS (aproximación del 15% del sueldo)
+        const aporteParaCapital = esBps ? aporteBase * 0.15 : aporteBase;
+        capitalProyectado = calcularCapitalProyectado(aporteParaCapital, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
+    }
+
+    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
+    let ingresoBaseReal = aporteBase * TASA_REEMPLAZO_BPS_CAJA; 
+    let ingresoMensualTotal = Math.max(ingresoBaseReal, MINIMO_INGRESOMENSUAL_EDUCATIVO);
+    
+    // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
+    // ** CORRECCIÓN CLAVE: Usar el ingresoBaseReal (el 55% real) para mostrar el porcentaje de brecha, no el monto ajustado por el mínimo. **
+    const porcentajeAporte = Math.min(100, (ingresoBaseReal / aporteBase) * 100).toFixed(0); 
+    
+    return {
+        ahorroTotal: formatUYU(capitalProyectado),
+        ingresoMensual: formatUYU(ingresoMensualTotal),
+        porcentajeAporte: porcentajeAporte,
+        ingresoBaseReal: ingresoBaseReal,
+        aporteBase: aporteBase,
+        categoria: categoriaNombre,
+    };
 };
 
 // Lógica principal de la simulación
 const simularResultados = (datos: DatosClave): ResultadosProyeccion => {
     const aporteActual = getAporteActual(datos);
     
-    // Se asegura de que la edad actual y de retiro sean números válidos para el cálculo
     const edadActualCalculo = datos.edadActual === null || isNaN(datos.edadActual) ? 0 : datos.edadActual;
     const edadRetiroCalculo = datos.edadRetiro === null || isNaN(datos.edadRetiro) ? 0 : datos.edadRetiro;
     const añosParaCalculo = Math.max(0, edadRetiroCalculo - edadActualCalculo);
-
 
     if (añosParaCalculo <= 0 || aporteActual <= 0) {
         return initialResultados;
     }
 
-    // 1. CÁLCULO DEL CAPITAL PROYECTADO (Ahorro AFAP/Ahorro)
-    let capitalProyectado = 0;
+    // =========================================================================
+    // ESCENARIO 1: Mínimo Esperado (Base actual)
+    // =========================================================================
+    const categoriaE1 = datos.tipoAporte === 'CAJA' ? datos.categoriaCajaSeleccionada.nombre : '';
+    const escenario1 = calcularEscenario(
+        aporteActual, 
+        añosParaCalculo, 
+        datos.afapActiva, 
+        datos.tipoAporte === 'BPS',
+        categoriaE1
+    );
 
-    // *** MODIFICACIÓN CLAVE: Solo calcular si AFAP está activa ***
-    if (datos.afapActiva) {
-        // Mejorar la simulación del aporte a AFAP para BPS (aproximación del 15% del sueldo)
-        const aporteParaCapital = datos.tipoAporte === 'BPS' ? aporteActual * 0.15 : aporteActual;
-        capitalProyectado = calcularCapitalProyectado(aporteParaCapital, añosParaCalculo, TASA_CRECIMIENTO_ANUAL);
+    // =========================================================================
+    // ESCENARIO 2: Máximo Esperado (Ascenso) - Solo para CAJA
+    // =========================================================================
+    let escenario2: ResultadosProyeccion['escenario2'] = null;
+
+    if (datos.tipoAporte === 'CAJA') {
+        const categoriaActualIndex = CATEGORIAS_CAJA.findIndex(c => c.nombre === datos.categoriaCajaSeleccionada.nombre);
+        
+        // Simular ascenso de 1 categoría cada AÑOS_POR_CATEGORIA_ASCENSO hasta la edad de retiro.
+        let aporteAcumuladoTotal = 0;
+        let añosRestantes = añosParaCalculo;
+        let capitalAcumuladoE2 = 0;
+        let categoriaFinalIndex = categoriaActualIndex;
+
+        // Bucle para simular el ascenso progresivo
+        for (let año = 1; año <= añosParaCalculo; año++) {
+            
+            // Determinar la categoría actual para este año
+            if (año > 0 && año % AÑOS_POR_CATEGORIA_ASCENSO === 0 && categoriaFinalIndex < CATEGORIAS_CAJA.length - 1) {
+                categoriaFinalIndex++; // Simular ascenso
+            }
+
+            const categoriaActual = CATEGORIAS_CAJA[categoriaFinalIndex];
+            const aporteMensual = categoriaActual.aporte;
+            
+            // Simulación de Capital (Interés Compuesto anual)
+            if (datos.afapActiva) {
+                // Aporte Mensual * 12 meses
+                const aporteAnual = aporteMensual * 12;
+                
+                // Capital (valor al final del año actual)
+                capitalAcumuladoE2 = capitalAcumuladoE2 * (1 + TASA_CRECIMIENTO_ANUAL) + aporteAnual * (1 + TASA_CRECIMIENTO_ANUAL);
+            }
+
+            aporteAcumuladoTotal = aporteMensual; // Solo necesitamos el último para la pensión base
+        }
+        
+        // El ingreso base final se calcula con el ÚLTIMO aporte.
+        const aporteBaseFinal = CATEGORIAS_CAJA[categoriaFinalIndex].aporte;
+        const categoriaFinalNombre = CATEGORIAS_CAJA[categoriaFinalIndex].nombre;
+
+        // Calcular la pensión final (Escenario 2)
+        const ingresoBaseRealE2 = aporteBaseFinal * TASA_REEMPLAZO_BPS_CAJA; 
+        const ingresoMensualTotalE2 = Math.max(ingresoBaseRealE2, MINIMO_INGRESOMENSUAL_EDUCATIVO);
+        const porcentajeAporteE2 = Math.min(100, (ingresoBaseRealE2 / aporteBaseFinal) * 100).toFixed(0); 
+
+        escenario2 = {
+            ahorroTotal: formatUYU(capitalAcumuladoE2),
+            ingresoMensual: formatUYU(ingresoMensualTotalE2),
+            porcentajeAporte: porcentajeAporteE2,
+            ingresoBaseReal: ingresoBaseRealE2,
+            aporteBase: aporteBaseFinal,
+            categoria: categoriaFinalNombre,
+        };
     }
-
-    // 2. CÁLCULO DEL INGRESO MENSUAL ESTIMADO (Pensión BASE BPS/Caja)
-    // *** APLICACIÓN DE LA REGLA DEL 55% ***
-    let ingresoBase = aporteActual * TASA_REEMPLAZO_BPS_CAJA; 
-    
-    // *** MODIFICACIÓN CRÍTICA: APLICAR MÍNIMO JUBILATORIO (EDUCATIVO) ***
-    let ingresoMensualTotal = Math.max(ingresoBase, MINIMO_INGRESOMENSUAL_EDUCATIVO);
-    
-    // 3. Cálculo del porcentaje de reemplazo (Brecha Previsional)
-    // *** CORRECCIÓN CLAVE: Usar el ingresoBase (55% real) para mostrar el porcentaje de brecha, no el monto ajustado por el mínimo. ***
-    const porcentajeAporte = Math.min(100, (ingresoBase / aporteActual) * 100).toFixed(0); 
     
     return {
-        ahorroTotal: formatUYU(capitalProyectado),
-        ingresoMensual: formatUYU(ingresoMensualTotal),
-        porcentajeAporte: porcentajeAporte,
+        escenario1,
+        escenario2,
         simulacionRealizada: true,
-        // Almacenar el monto final (ajustado por el mínimo) en formato numérico para el renderizado del warning
-        ingresoMensualCalculado: ingresoMensualTotal,
     };
 };
 
@@ -268,7 +366,7 @@ const CalculatorTabs: React.FC = () => {
             setActiveTab('proyeccion');
             setIsCalculating(false);
         }, 500); 
-    }, [datosClave, isCalculating, añosRestantes]); // añosRestantes añadido a las dependencias
+    }, [datosClave, isCalculating, añosRestantes]); 
 
     // Lógica de actualización del Aporte Base de Caja
     useEffect(() => {
@@ -306,8 +404,7 @@ const CalculatorTabs: React.FC = () => {
         <div className="asesor-card" style={{ 
             padding: '25px', 
             borderRadius: '10px', 
-            // Color de la tarjeta de asesor (Teal/Verde-Azulado de la marca)
-            backgroundColor: '#008080', 
+            backgroundColor: '#008080', // Color de la tarjeta de asesor (Teal/Verde-Azulado de la marca)
             color: 'white', 
             textAlign: 'center', 
             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)' 
@@ -598,7 +695,7 @@ const CalculatorTabs: React.FC = () => {
         );
     };
 
-    // Render de la pestaña Proyección (REDESIGNADO)
+    // Render de la pestaña Proyección (RESTAURADO CON ESCENARIOS)
     const renderProyeccion = () => {
         if (!resultados.simulacionRealizada) {
             return (
@@ -617,100 +714,130 @@ const CalculatorTabs: React.FC = () => {
                 </div>
             );
         }
-
-        const aporteActual = getAporteActual(datosClave);
-        const ingresoBaseReal = aporteActual * TASA_REEMPLAZO_BPS_CAJA;
-
-        // Texto actualizado para reflejar que la renta AFAP se ve reflejada solo en el capital.
-        const AnalysisText = datosClave.afapActiva ? (
-            <span> (**Nota:** Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).</span>
-        ) : (
-            <span>.</span>
-        );
         
+        // Función para renderizar un Escenario
+        const renderEscenario = (escenario: ResultadosProyeccion['escenario1'], titulo: string, descripcion: string) => {
+            
+            // Suavizar el color del warning: de rojo a un amarillo-naranja suave
+            const isMinimumApplied = escenario.ingresoBaseReal < MINIMO_INGRESOMENSUAL_EDUCATIVO;
+            const warningStyle = {
+                backgroundColor: '#FFF8E1', // Amarillo/Naranja muy suave
+                borderLeft: '5px solid #FFC107', // Borde naranja
+                color: '#856404', // Texto oscuro para contraste
+                padding: '15px', 
+                borderRadius: '5px', 
+                marginBottom: '20px', 
+                fontWeight: 500
+            };
+
+            const infoAporte = datosClave.tipoAporte === 'CAJA' ? 
+                `Categoría: ${escenario.categoria}.` :
+                `Aporte Base: ${formatUYU(escenario.aporteBase)} UYU.`;
+                
+            // Texto actualizado para reflejar la corrección del 55%
+            const analysisText = datosClave.afapActiva ? (
+                `Tu proyección de ingreso mensual estimada representa solo el ${escenario.porcentajeAporte}% de tu aporte base. (Calculado como ${TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo. Nota: Tu AFAP se refleja en el Capital Proyectado, no en el Ingreso Mensual base).`
+            ) : (
+                `Tu proyección de ingreso mensual estimada representa solo el ${escenario.porcentajeAporte}% de tu aporte base. (Calculado como ${TASA_REEMPLAZO_BPS_CAJA * 100}% de tu aporte base o el mínimo educativo).`
+            );
+            
+            // Texto para el Análisis Educativo
+            const finalAporteText = formatUYU(escenario.aporteBase);
+            const finalIngresoText = escenario.ingresoMensual;
+
+            return (
+                <div className="escenario-card" style={{ border: '1px solid #ddd', padding: '25px', borderRadius: '8px', marginBottom: '30px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                    <h4 style={{ color: '#008080', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>{titulo}</h4>
+                    <p style={{ fontStyle: 'italic', fontSize: '0.9rem', color: '#666' }}>{descripcion}</p>
+
+                    <div className="results-card" style={{ marginTop: '20px', backgroundColor: '#f9f9f9', padding: '15px', borderRadius: '5px' }}>
+                        <div className="result-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                            <span style={{ fontWeight: 500 }}>Aporte Mensual Base (UYU):</span>
+                            <span className="result-value-nowrap" style={{ fontWeight: 700 }}>{finalAporteText} UYU</span>
+                        </div>
+                        {datosClave.tipoAporte === 'CAJA' && (
+                            <div className="result-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                                <span style={{ fontWeight: 500 }}>{datosClave.tipoAporte === 'CAJA' ? 'Categoría Final' : 'Aporte Base'}</span>
+                                <span className="result-value-nowrap" style={{ fontWeight: 700 }}>({escenario.categoria})</span>
+                            </div>
+                        )}
+                        <div className="result-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                            <span style={{ fontWeight: 500 }}>Ahorro Total Estimado (Capital AFAP/Ahorro):</span>
+                            <span className="result-value-nowrap" style={{ fontWeight: 700 }}>{escenario.ahorroTotal} UYU</span>
+                        </div>
+                        <div className="result-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '2px solid #ddd', marginBottom: '10px' }}>
+                            <span style={{ fontWeight: 500 }}>Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):</span>
+                            <span className="result-value-nowrap" style={{ fontWeight: 700, fontSize: '1.2rem', color: '#008080' }}>{finalIngresoText} UYU</span>
+                        </div>
+                    </div>
+                    
+                    {isMinimumApplied && (
+                        <div className="warning-banner" style={warningStyle}>
+                            ¡ATENCIÓN! El cálculo base para este nivel de aporte es de **{formatUYU(escenario.ingresoBaseReal)} UYU**. Tu pensión se ajustaría al mínimo legal de **{formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU**.
+                        </div>
+                    )}
+
+                    <h5 style={{ color: '#333', marginTop: '20px', marginBottom: '10px', borderBottom: '1px dotted #eee', paddingBottom: '5px' }}>Brecha Previsional:</h5>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        {analysisText.replace(/\*\*/g, '')} {/* Eliminar dobles asteriscos */}
+                    </p>
+
+                </div>
+            );
+        };
+
         return (
             <div className="proyeccion-layout-container" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
                 
                 {/* PANEL IZQUIERDO: RESULTADOS Y ANÁLISIS (70%) */}
                 <div className="panel-left" style={{ flex: 2 }}>
-                    <h3 className="datos-clave-title" style={{ color: '#333' }}>Resultados de la Proyección (Escenario Único)</h3>
+                    <h3 className="datos-clave-title" style={{ color: '#333' }}>Resultados de la Proyección (Simulación Local)</h3>
                     
-                    {/* 1. HERO METRICS (Métricas Destacadas) - DISEÑO MODERNO */}
-                    <div className="hero-results" style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '20px' }}>
-                        
-                        {/* METRIC 1: CAPITAL AFAP/AHORRO */}
-                        <div className="metric-ahorro" style={{ flex: 1, textAlign: 'center', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
-                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
-                                Ahorro Total Estimado {datosClave.afapActiva ? '(Capital AFAP/Ahorro)' : '(Sin AFAP)'}:
-                            </span>
-                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: 800, color: '#008080', marginTop: '5px' }}>
-                                {resultados.ahorroTotal} UYU
-                            </span>
-                        </div>
-
-                        {/* METRIC 2: INGRESO MENSUAL BASE */}
-                        <div className="metric-ingreso" style={{ flex: 1, textAlign: 'center', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#E0FFFF' }}>
-                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#333', fontWeight: 500 }}>
-                                Ingreso Mensual Estimado en Retiro (Pensión Base BPS/Caja):
-                            </span>
-                            <span style={{ display: 'block', fontSize: '2.5rem', fontWeight: 900, color: '#333', marginTop: '5px' }}>
-                                {resultados.ingresoMensual} UYU
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* ADVERTENCIA BANNER (Solo aparece si el cálculo real fue menor al mínimo) */}
-                    {ingresoBaseReal < MINIMO_INGRESOMENSUAL_EDUCATIVO && (
-                        <div className="warning-banner" style={{ 
-                            backgroundColor: '#FFEBEE', 
-                            borderLeft: '5px solid #F44336', 
-                            padding: '15px', 
-                            borderRadius: '5px', 
-                            marginBottom: '20px', 
-                            color: '#F44336',
-                            fontWeight: 600
-                        }}>
-                            ¡ATENCIÓN! El cálculo base para tu nivel de aporte es de **{formatUYU(ingresoBaseReal)} UYU**. Tu pensión **se ajustaría al mínimo legal de {formatUYU(MINIMO_INGRESOMENSUAL_EDUCATIVO)} UYU**.
-                        </div>
+                    {/* ESCENARIO 1: MÍNIMO ESPERADO */}
+                    {renderEscenario(
+                        resultados.escenario1,
+                        'ESCENARIO 1: Pensión en Base a Categoría Actual (Mínimo Esperado)',
+                        'Se simula tu retiro manteniendo tu categoría de aporte actual hasta el final de tu carrera. Este es el resultado MÍNIMO esperado.'
                     )}
 
-                    {/* 2. ANÁLISIS EDUCATIVO (Módulos de Insight) */}
-                    <h3 className="datos-clave-title" style={{ marginTop: '30px', borderBottom: 'none' }}>Análisis Educativo y Previsional</h3>
-                    
-                    <div className="analysis-insights-container" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {/* ESCENARIO 2: MÁXIMO ESPERADO (Solo para Caja) */}
+                    {resultados.escenario2 && renderEscenario(
+                        resultados.escenario2,
+                        'ESCENARIO 2: Pensión Proyectada por Ascenso de Carrera (¡El que te gusta!)',
+                        `Se simula el ascenso automático de 1 categoría cada ${AÑOS_POR_CATEGORIA_ASCENSO} años, proyectando un total de ${Math.floor(añosRestantes / AÑOS_POR_CATEGORIA_ASCENSO)} ascensos. Este es un resultado MÁXIMO educativo bajo este supuesto de carrera.`
+                    )}
 
-                        {/* INSIGHT 1: BRECHA PREVISIONAL */}
-                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
-                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>1. La Brecha Previsional (Foco Educativo):</h4>
-                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                                Tu proyección de ingreso mensual estimada representa solo el **{resultados.porcentajeAporte}%** de tu aporte actual (asumiendo tu aporte actual de **{formatUYU(aporteActual)} UYU** como tu nivel de vida deseado). Esta diferencia es la **Brecha Previsional**. Es fundamental complementarla para **mantener tu calidad de vida** en el retiro.
-                            </p>
-                        </div>
-
-                        {/* INSIGHT 2: POR QUÉ COMPLEMENTAR */}
-                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
-                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>2. ¿Por qué Complementar? (Estrategia y Profundidad):</h4>
-                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                                El sistema estatal ofrece una **base de sustentación**. La **Renta AFAP** se calcula sobre tu capital acumulado y está sujeta a la ley de anualidades. Por ello, se recomienda enfáticamente complementar con herramientas de ahorro privado como **Seguros de Renta Personal** o **Ahorro + Vida**, que ofrecen rendimientos optimizados y blindaje. {AnalysisText}
-                            </p>
-                        </div>
-
-                        {/* INSIGHT 3: REQUISITOS LEGALES */}
-                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
-                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>3. Requisitos Legales (Ley 20.130):</h4>
-                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                                La nueva ley de seguridad social exige el cumplimiento de **{EDAD_MINIMA_RETIRO} años de edad** y **{AÑOS_MINIMOS_SERVICIO} años de servicio** para acceder a la jubilación por edad. Tu planificación debe enfocarse en cumplir estos requisitos **además** de tu meta de ahorro.
-                            </p>
-                        </div>
-
-                        {/* INSIGHT 4: ACCIÓN PRIORITARIA */}
-                        <div className="insight-module" style={{ padding: '15px', borderLeft: '3px solid #008080', backgroundColor: '#F0FFFF', borderRadius: '5px' }}>
-                            <h4 style={{ color: '#008080', marginTop: 0, marginBottom: '5px' }}>4. Acción Prioritaria (Etapa de Potenciación):</h4>
-                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                                ¡Estás en la etapa ideal! Con **{añosRestantes} años** por delante, la **constancia** y el **interés compuesto** son tus mayores aliados. Es fundamental una **asesoría personalizada** para definir la mejor herramienta que se ajuste a tus metas (sea **Renta, Ahorro + Vida** u otra).
-                            </p>
-                        </div>
+                    {/* ANÁLISIS EDUCATIVO GENERAL (Reintroduciendo la estructura de la lista) */}
+                    <h3 className="datos-clave-title" style={{ marginTop: '30px' }}>Análisis Educativo y Previsional</h3>
+                    <div className="analysis-card" style={{ padding: '25px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                        <h4 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
+                            <span>Análisis Educativo y Profundidad</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#008080', backgroundColor: '#E0FFFF', padding: '3px 8px', borderRadius: '3px' }}>GENERADO POR IA</span>
+                        </h4>
+                        <ol style={{ paddingLeft: '20px', marginTop: '15px' }}>
+                            <li style={{ marginBottom: '15px' }}>
+                                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                    <strong>1. La Brecha Previsional (Foco Educativo):</strong> Tu pensión base estimada representa solo el **{resultados.escenario1.porcentajeAporte}%** de tu aporte actual, incluso considerando un potencial ascenso (Escenario 2). La diferencia entre tu nivel de vida actual ({formatUYU(resultados.escenario1.aporteBase)} UYU) y el ingreso proyectado es la <strong>Brecha Previsional</strong>. Es fundamental complementarla para <strong>mantener tu calidad de vida en el retiro</strong>.
+                                </p>
+                            </li>
+                            <li style={{ marginBottom: '15px' }}>
+                                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                    <strong>2. ¿Por qué Complementar? (Estrategia y Profundidad):</strong> El sistema estatal ofrece una <strong>base de sustentación</strong>. La renta de AFAP se calcula sobre tu **capital acumulado**, no sobre un monto fijo, y está sujeta a la ley de anualidades. Se recomienda enfáticamente complementar el fondo estatal con herramientas de ahorro privado como <strong>Seguros de Renta Personal</strong> o <strong>Ahorro + Vida</strong>, que ofrecen rendimientos optimizados y blindaje.
+                                </p>
+                            </li>
+                            <li style={{ marginBottom: '15px' }}>
+                                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                    <strong>3. Requisitos Legales (Ley 20.130):</strong> La nueva ley de seguridad social exige el cumplimiento de <strong>{EDAD_MINIMA_RETIRO} años de edad</strong> y <strong>{AÑOS_MINIMOS_SERVICIO} años de servicio</strong> para acceder a la jubilación por edad. Tu planificación debe enfocarse en cumplir estos requisitos además de la meta de ahorro.
+                                </p>
+                            </li>
+                            <li>
+                                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                    <strong>4. Acción Prioritaria (Etapa de Potenciación):</strong> ¡Estás en la etapa ideal! Con <strong>{añosRestantes} años</strong> por delante, la <strong>constancia</strong> y el <strong>interés compuesto</strong> son tus mayores aliados. Es fundamental una <strong>asesoría personalizada</strong> para definir la mejor herramienta que se ajuste a tus metas (sea <strong>Renta, Ahorro + Vida</strong> u otra).
+                                </p>
+                            </li>
+                        </ol>
                     </div>
+
                 </div>
 
                 {/* PANEL DERECHO: ASESORÍA (30%) */}
