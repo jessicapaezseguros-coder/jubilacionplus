@@ -1,5 +1,5 @@
 import { useState } from 'react';
-// IMPORTACIÓN CORREGIDA: Cambiado a minúscula 'components' para Netlify/Linux.
+// RUTA CORREGIDA: Asegurando 'components' en minúscula
 import Header from "./components/Header.tsx"; 
 import CalculatorTabs from "./components/CalculatorTabs.tsx";
 import './App.css'; 
@@ -12,12 +12,10 @@ function App() {
   const handleCalculate = (data) => {
     setCalculationData(data);
     setIsCalculated(true);
-    // console.log("Datos de cálculo recibidos en App.tsx:", data); // Debugging
   };
 
   return (
     <>
-      {/* El Header es estático y va fuera del contenedor de pestañas */}
       <Header />
       
       <div className="calculator-tabs-wrapper">
