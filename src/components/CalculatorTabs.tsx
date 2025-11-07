@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import './../Styles/Calculator.css';
+// FIX RUTA: Usamos el alias absoluto para CSS
+import '@/Styles/Calculator.css';
 import RetirementCalculator from '@/components/RetirementCalculator';
 import SimulationResults from '@/components/SimulationResults';
 
-// FIX TS7031: Añadidos tipos 'any' a los props del componente
 const CalculatorTabs = ({ onCalculate, calculationData, isCalculated }: any) => {
     const [activeTab, setActiveTab] = useState('calculator');
 
-    // FIX TS7006: Añadido tipo 'any' a 'data'
     const handleCalculation = (data: any) => {
         if (data.retirementAge <= data.age) {
             alert("La edad de jubilación debe ser mayor a tu edad actual para realizar la proyección.");

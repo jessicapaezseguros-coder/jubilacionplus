@@ -1,8 +1,8 @@
 // FIX TS6133: Eliminado 'React,'
-import './../../src/Styles/Input.css';
+// FIX RUTA: Usamos el alias absoluto para CSS
+import '@/Styles/Input.css';
 
 const Select = ({ label, name, value, onChange, options }: any) => {
-    // FIX TS7006: Añadido tipo 'any' a 'event'
     const handleChange = (event: any) => {
         onChange(name, event.target.value);
     };

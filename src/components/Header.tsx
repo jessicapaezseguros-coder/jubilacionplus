@@ -1,5 +1,6 @@
 // FIX TS6133: Eliminado 'React,'
-import './../../src/Styles/Header.css';
+// FIX RUTA: Usamos el alias absoluto para CSS
+import '@/Styles/Header.css';
 
 const Header = () => {
     return (

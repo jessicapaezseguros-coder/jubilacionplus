@@ -1,10 +1,9 @@
-// FIX TS6133: Eliminado 'React,'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
-import './../../src/Styles/Input.css';
+// FIX RUTA: Usamos el alias absoluto para CSS
+import '@/Styles/Input.css';
 
 const NumberInput = ({ label, name, value, onChange }: any) => {
-    // FIX TS7006: Añadido tipo 'any' a 'event'
     const handleChange = (event: any) => {
         const newValue = event.target.value === '' ? '' : parseInt(event.target.value);
         onChange(name, newValue);
