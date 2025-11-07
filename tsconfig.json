@@ -2,33 +2,24 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    /* FIX TS6046: Librerías en minúsculas */
-    "lib": ["es2020", "dom", "domiterable"], 
-    
+    "lib": ["es2022", "dom", "domiterable"], 
     "module": "ESNext",
     "skipLibCheck": true,
-
-    /* CONFIGURACIÓN CRÍTICA PARA ALIAS DE RUTA (@/) */
     "baseUrl": ".", 
     "paths": {
       "@/*": ["src/*"]
     },
-    /* FIN DE CONFIGURACIÓN CRÍTICA */
-
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  /* Esta referencia ahora apunta al archivo que acabas de crear */
   "references": [{ "path": "./tsconfig.node.json" }] 
 }

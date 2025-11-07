@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-// CORRECCIÓN: Usando alias absoluto (@/)
+import { useState } from 'react';
 import NumberInput from "@/components/NumberInput"; 
 import Select from "@/components/Select";
 
-const RetirementCalculator = ({ onCalculate }) => {
+// FIX TS7031: Añadido tipo 'any' a los props
+const RetirementCalculator = ({ onCalculate }: any) => {
     const [formData, setFormData] = useState({
         age: 30,
         currentSavings: 10000,
@@ -12,12 +12,18 @@ const RetirementCalculator = ({ onCalculate }) => {
         riskProfile: 'medium'
     });
 
-    const handleChange = (name, value) => {
+    // FIX TS7006 y TS2322: Añadido tipo 'any' a 'name' y 'value'
+    const handleChange = (name: any, value: any) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    // FIX TS7006: Añadido tipo 'any' a 'e'
+    const handleSubmit = (e: any) => {
         e.preventDefault();
+        if (formData.retirementAge <= formData.age) {
+            alert("La edad de jubilación debe ser mayor a tu edad actual para realizar la proyección.");
+            return;
+        }
         onCalculate(formData);
     };
 
