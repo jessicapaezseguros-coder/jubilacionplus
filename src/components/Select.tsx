@@ -1,4 +1,4 @@
-// FIX RUTA: Usamos el alias absoluto con 's' minúscula
+// FIX: Usando la importación absoluta con el alias @/
 import '@/styles/Input.css';
 
 const Select = ({ label, name, value, onChange, options }: any) => {
