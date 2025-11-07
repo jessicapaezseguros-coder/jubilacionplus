@@ -1,26 +1,15 @@
-// src/Components/Header.tsx
-
-import React from 'react';
-import '../Styles/Calculator.css';
+// FIX TS6133: Eliminado 'React,'
+import './../../src/Styles/Header.css';
 
 const Header = () => {
     return (
-        <header className="app-header-glam">
-            <div className="header-logo-section">
-                {/* Estilización de la 'J' con CSS para usar el color de acento Rosa Viejo */}
-                <div className="logo-j">J</div>
-                <h1 className="main-title">JUBILACIÓN+</h1>
+        <header className="app-header">
+            <div className="logo-container">
+                <h1>Jubilación Plus</h1>
             </div>
-            {/* Nuevo elemento 'Anticipate' con estilo GLAM/Manuscrito */}
-            <p className="anticipate-text-glam">Anticipate</p>
-
-            <p className="tagline">Simulador de Brecha Previsional Uruguay (Educativo)</p>
-            
-            {/* Información del asesor */}
-            <div className="header-contact-info">
-                <span className="lic-name">LIC. JESSICA PAEZ</span>
-                <span className="lic-role">ASESORA TÉCNICA EN SEGUROS PERSONALES</span>
-            </div>
+            <nav>
+                {/* Puedes añadir enlaces aquí si es necesario */}
+            </nav>
         </header>
     );
 };

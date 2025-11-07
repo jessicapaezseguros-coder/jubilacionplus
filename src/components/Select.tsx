@@ -1,50 +1,28 @@
-// src/Components/Select.tsx - VERSIÓN ROBUSTA FINAL
+// FIX TS6133: Eliminado 'React,'
+import './../../src/Styles/Input.css';
 
-import React from 'react';
+const Select = ({ label, name, value, onChange, options }: any) => {
+    // FIX TS7006: Añadido tipo 'any' a 'event'
+    const handleChange = (event: any) => {
+        onChange(name, event.target.value);
+    };
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-    label: string;
-    smallText?: string;
-    name: string;
-    options: string[]; 
-}
-
-const Select: React.FC<SelectProps> = ({ 
-    label, 
-    smallText, 
-    name, 
-    options, 
-    value, 
-    onChange, 
-    ...rest 
-}) => {
-    
-    // 🛑 CORRECCIÓN CRÍTICA: Asegura que options sea un array (vacío si es null/undefined)
-    // Esto evita el error "Cannot read properties of undefined"
-    const finalOptions = Array.isArray(options) ? options : [];
-    
     return (
-        <div className="input-group">
-            <label htmlFor={name} className="form-label">
-                {label}
-            </label>
+        <div className="select-container">
+            <label htmlFor={name}>{label}</label>
             <select
                 id={name}
                 name={name}
-                className="select-field"
                 value={value}
-                onChange={onChange}
-                {...rest}
-                // Inhabilita si no hay opciones para evitar fallos
-                disabled={finalOptions.length === 0 || rest.disabled} 
+                onChange={handleChange}
+                className="custom-select"
             >
-                {finalOptions.map(option => (
+                {options.map((option: string) => (
                     <option key={option} value={option}>
-                        {option}
+                        {option.charAt(0).toUpperCase() + option.slice(1)}
                     </option>
                 ))}
             </select>
-            {smallText && <p className="small-text">{smallText}</p>}
         </div>
     );
 };
