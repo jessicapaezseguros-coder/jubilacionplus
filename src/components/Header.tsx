@@ -1,5 +1,7 @@
-// FIX: Sólo debe contener código TSX.
-import '@/styles/Header.css'; // Importa el CSS desde el archivo correcto
+// src/components/Header.tsx
+
+// FIX RUTA: Usamos el alias absoluto con 's' minúscula
+import '@/styles/Header.css';
 
 const Header = () => {
     return (

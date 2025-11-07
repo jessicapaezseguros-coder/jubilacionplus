@@ -1,6 +1,13 @@
-/* src/App.css (Contenido sugerido, elimina el CSS de la calculadora) */
-
-.App {
-  text-align: center;
+/* src/App.css */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f7f9;
+    padding-top: 20px;
 }
-/* ... otros estilos base que no son de la calculadora ... */
+
+.calculator-tabs-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
