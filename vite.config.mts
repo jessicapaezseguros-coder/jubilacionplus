@@ -1,14 +1,16 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import * as path from 'node:path'; 
+// vite.config.mts
 
-// https://vitejs.dev/config/
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
 export default defineConfig({
+  // ¡ESTE ES EL FIX! Define la base del path de los assets como la raíz del dominio.
+  base: '/', 
   plugins: [react()],
   resolve: {
     alias: {
-      // Mapea el alias '@' al directorio absoluto de 'src'
-      '@': path.resolve(__dirname, 'src'),
+      // Mantenemos el alias para @/src
+      '@/': '/src/', 
     },
   },
-})
+});
