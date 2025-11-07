@@ -29,6 +29,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  /* Esta referencia ahora apuntará al archivo que acabas de crear */
+  /* Esta referencia ahora apunta al archivo que acabas de crear */
   "references": [{ "path": "./tsconfig.node.json" }] 
 }
