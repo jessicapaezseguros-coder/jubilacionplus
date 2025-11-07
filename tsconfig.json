@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOMIterable"],
+    /* FIX TS6046: Librerías en minúsculas */
+    "lib": ["es2020", "dom", "domiterable"], 
+    
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -27,5 +29,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  /* Esta referencia ahora apuntará al archivo que acabas de crear */
+  "references": [{ "path": "./tsconfig.node.json" }] 
 }
