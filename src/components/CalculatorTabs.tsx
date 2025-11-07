@@ -1,8 +1,9 @@
 // Nota: Las importaciones internas deben usar casing exacto según el nombre de tus archivos.
 import React, { useState } from 'react';
 import './../Styles/Calculator.css';
-import RetirementCalculator from './RetirementCalculator.tsx';
-import SimulationResults from './SimulationResults.tsx';
+// CORRECCIÓN: Eliminamos la extensión .tsx de las importaciones internas.
+import RetirementCalculator from './RetirementCalculator';
+import SimulationResults from './SimulationResults';
 
 // Asume que la función de cálculo compleja se importa de otro lugar
 // import { calculateRetirement } from '../utils/calculationUtils';
