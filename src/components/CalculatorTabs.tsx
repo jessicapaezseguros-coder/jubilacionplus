@@ -1,22 +1,9 @@
-// Nota: Las importaciones internas deben usar casing exacto según el nombre de tus archivos.
+// Nota: Las importaciones internas ahora usan el alias @/
 import React, { useState } from 'react';
 import './../Styles/Calculator.css';
-// CORRECCIÓN: Eliminamos la extensión .tsx de las importaciones internas.
-import RetirementCalculator from './RetirementCalculator';
-import SimulationResults from './SimulationResults';
-
-// Asume que la función de cálculo compleja se importa de otro lugar
-// import { calculateRetirement } from '../utils/calculationUtils';
-
-// Interfaz para la data (opcional, pero buena práctica)
-// interface CalculationData {
-//   age: number;
-//   currentSavings: number;
-//   monthlyContribution: number;
-//   retirementAge: number;
-//   // ... otros campos
-// }
-
+// CORRECCIÓN: Usando alias absoluto (@/) para resolver la inestabilidad de rutas.
+import RetirementCalculator from '@/components/RetirementCalculator';
+import SimulationResults from '@/components/SimulationResults';
 
 // Componente principal de las pestañas de la calculadora
 const CalculatorTabs = ({ onCalculate, calculationData, isCalculated }) => {

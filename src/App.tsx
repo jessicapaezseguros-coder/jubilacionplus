@@ -1,7 +1,7 @@
 import { useState } from 'react';
-// CORRECCIÓN: Eliminamos la extensión .tsx de ambos componentes
-import Header from "./components/Header"; 
-import CalculatorTabs from "./components/CalculatorTabs";
+// ¡CORRECCIÓN! Usando el nuevo alias absoluto (@/)
+import Header from "@/components/Header"; 
+import CalculatorTabs from "@/components/CalculatorTabs";
 import './App.css'; 
 
 function App() {
