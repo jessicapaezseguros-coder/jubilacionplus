@@ -1,1 +1,31 @@
-{"name":"jubilacionplus","version":"1.0.0","scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},"dependencies":{"@fortawesome/fontawesome-free":"^7.1.0","@fortawesome/fontawesome-svg-core":"^7.1.0","@fortawesome/free-brands-svg-icons":"^7.1.0","@fortawesome/free-solid-svg-icons":"^7.1.0","@fortawesome/react-fontawesome":"^3.1.0","@google/genai":"^1.28.0","@google/generative-ai":"^0.24.1","react":"^18.2.0","react-dom":"^18.2.0"},"devDependencies":{"@types/react":"^18.0.27","@types/react-dom":"^18.0.10","@vitejs/plugin-react":"^5.1.0","typescript":"^5.2.2","vite":"^5.4.0"}}
+{
+  "name": "jubilacionplus",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-brands-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.0",
+    "@google/genai": "^1.28.0",
+    "@google/generative-ai": "^0.24.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.4.0"
+  }
+}

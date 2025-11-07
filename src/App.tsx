@@ -1,5 +1,5 @@
 import { useState } from 'react';
-// ¡CORRECCIÓN! Usando el nuevo alias absoluto (@/)
+// CORRECCIÓN: Usando alias absoluto (@/)
 import Header from "@/components/Header"; 
 import CalculatorTabs from "@/components/CalculatorTabs";
 import './App.css'; 
