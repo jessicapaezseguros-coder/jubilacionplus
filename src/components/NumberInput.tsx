@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
-// FIX RUTA: Usamos el alias absoluto para CSS
-import '@/Styles/Input.css';
+// FIX RUTA: Usamos el alias absoluto con 's' minúscula
+import '@/styles/Input.css';
 
 const NumberInput = ({ label, name, value, onChange }: any) => {
     const handleChange = (event: any) => {

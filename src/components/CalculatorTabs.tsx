@@ -1,6 +1,6 @@
 import { useState } from 'react';
-// FIX RUTA: Usamos el alias absoluto para CSS
-import '@/Styles/Calculator.css';
+// FIX RUTA: Usamos el alias absoluto con 's' minúscula
+import '@/styles/Calculator.css';
 import RetirementCalculator from '@/components/RetirementCalculator';
 import SimulationResults from '@/components/SimulationResults';
 

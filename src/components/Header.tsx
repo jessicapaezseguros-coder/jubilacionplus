@@ -1,6 +1,5 @@
-// FIX TS6133: Eliminado 'React,'
-// FIX RUTA: Usamos el alias absoluto para CSS
-import '@/Styles/Header.css';
+// FIX RUTA: Usamos el alias absoluto con 's' minúscula
+import '@/styles/Header.css';
 
 const Header = () => {
     return (
