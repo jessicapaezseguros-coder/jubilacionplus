@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import Header from "./components/Header"; 
 import CalculatorTabs from "./components/CalculatorTabs";
-// FIX: Cambiamos la ruta relativa a la ruta absoluta usando el alias @/
+// ¡ESTE ES EL FIX! Usa el alias absoluto para garantizar que el CSS cargue.
 import '@/App.css'; 
 
 function App() {
   const [calculationData, setCalculationData] = useState(null);
   const [isCalculated, setIsCalculated] = useState(false);
 
-  // Añadimos : any a 'data' para evitar errores de tipado
-  const handleCalculate = (data: any) => { 
+  // Función que se pasa a CalculatorTabs para recibir y almacenar los datos
+  const handleCalculate = (data: any) => { // Añadido : any para consistencia
     setCalculationData(data);
     setIsCalculated(true);
   };
