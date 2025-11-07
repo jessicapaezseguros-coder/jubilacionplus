@@ -1,7 +1,7 @@
 import { useState } from 'react';
-// RUTA CORREGIDA: Asegurando 'components' en minúscula
-import Header from "./components/Header.tsx"; 
-import CalculatorTabs from "./components/CalculatorTabs.tsx";
+// CORRECCIÓN: Eliminamos la extensión .tsx de ambos componentes
+import Header from "./components/Header"; 
+import CalculatorTabs from "./components/CalculatorTabs";
 import './App.css'; 
 
 function App() {
