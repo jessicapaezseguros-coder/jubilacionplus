@@ -1,0 +1,55 @@
+/* src/components/FloatingWhatsApp.css */
+
+.wa-floating {
+  position: fixed; /* Siempre fijo en la pantalla */
+  bottom: 30px;
+  right: 30px;
+  
+  /* Z-INDEX MÁXIMO: Para que flote sobre el simulador y tooltips */
+  z-index: 10000; 
+
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  
+  /* Color WhatsApp Oficial con un toque de degradado para volumen */
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  
+  /* Sombra elegante */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.wa-floating:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.wa-icon {
+  width: 34px; 
+  height: 34px; 
+  fill: white;
+}
+
+/* --- AJUSTE ESPECÍFICO PARA MÓVILES --- */
+@media (max-width: 768px) {
+  .wa-floating {
+    /* Más pequeño para no tapar contenido importante */
+    width: 50px;
+    height: 50px;
+    
+    /* Márgenes ajustados para evitar cortes de pantalla */
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .wa-icon {
+    width: 26px;
+    height: 26px;
+  }
+}

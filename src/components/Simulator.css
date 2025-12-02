@@ -1,0 +1,129 @@
+/* src/components/Simulator.css */
+
+.simulator-card {
+  background: white;
+  /* Padding reducido verticalmente para ganar espacio */
+  padding: 20px 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+  border: 1px solid white;
+  display: flex;
+  flex-direction: column;
+  /* Menos espacio entre elementos */
+  gap: 12px;
+  height: auto;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 0; /* Sin margen extra abajo */
+}
+
+.sim-header {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2F3624;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+  border-bottom: 2px solid #C9A449;
+  padding-bottom: 8px;
+  align-self: center;
+  /* Margen reducido */
+  margin-bottom: 5px;
+}
+
+.regime-toggle { 
+  display: flex; 
+  background: #FAFAFA; 
+  border-radius: 30px; 
+  padding: 4px; 
+  border: 1px solid #EEE; 
+  margin-bottom: 5px;
+}
+
+.toggle-btn {
+  flex: 1; 
+  padding: 8px 0; 
+  border: none; 
+  background: transparent; 
+  border-radius: 25px;
+  font-family: 'Montserrat', sans-serif; 
+  font-size: 0.75rem; 
+  font-weight: 600; 
+  color: #AAA;
+  cursor: pointer; 
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn.active { 
+  background: #C9A449; 
+  color: white; 
+  box-shadow: 0 3px 10px rgba(201, 164, 73, 0.25); 
+}
+
+.sim-fields { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; /* Gap reducido de 12px a 10px */
+}
+
+.fields-row { display: flex; gap: 15px; }
+.field-group { display: flex; flex-direction: column; gap: 4px; flex: 1; position: relative; }
+
+.field-group label { 
+  font-size: 0.6rem; 
+  font-weight: 700; 
+  color: #2F3624; 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 5px;
+}
+
+.sim-input, .sim-select {
+  width: 100%; 
+  padding: 8px 12px; /* Un poco menos de padding vertical */
+  border-radius: 6px; 
+  border: 1px solid #E0E0E0;
+  background: #FAFAFA; 
+  font-family: 'Montserrat', sans-serif; 
+  font-size: 0.8rem; 
+  color: #333; 
+  outline: none; 
+  height: 38px; /* Altura controlada */
+  transition: border 0.2s;
+}
+.sim-select { padding-right: 25px; text-overflow: ellipsis; }
+.sim-input:focus, .sim-select:focus { border-color: #C9A449; background: white; }
+
+.input-wrapper-liquid { position: relative; width: 100%; }
+.liquid-badge {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 0.55rem; font-weight: 700; color: #C9A449; background: rgba(201, 164, 73, 0.1); 
+  padding: 2px 6px; border-radius: 4px; pointer-events: none; letter-spacing: 0.5px;
+}
+
+.info-edad { 
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.75rem; /* Texto un poco más chico */
+  color: #666; 
+  text-align: center; 
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+}
+
+.error-msg { color: #D9534F; font-size: 0.7rem; text-align: center; margin: 5px 0; font-weight: 700; }
+
+.btn-calculate {
+  margin-top: 10px; /* Menos margen arriba */
+  width: 100%; 
+  padding: 12px; 
+  background: #2F3624; color: white;
+  font-family: 'Montserrat', sans-serif; font-size: 0.85rem; font-weight: 700; 
+  border: none; border-radius: 4px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+  transition: transform 0.2s; 
+  box-shadow: 0 8px 20px rgba(47, 54, 36, 0.25);
+}
+.btn-calculate:hover { background: #1a1f14; transform: translateY(-2px); }

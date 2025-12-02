@@ -1,0 +1,17 @@
+/* src/components/Header.css */
+
+.header {
+  width: 100%;
+  height: 60px; /* Altura original */
+  display: flex; align-items: center; justify-content: flex-start;
+  margin-bottom: 15px; /* Margen restaurado */
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(80, 98, 90, 0.15);
+  flex-shrink: 0;
+}
+
+.header-inner { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+.header-text { display: flex; flex-direction: column; justify-content: center; text-align: left; }
+
+.header-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 800; color: #2F3624; letter-spacing: 0.5px; line-height: 1; margin-bottom: 2px; }
+.header-subtitle { font-family: 'Montserrat', sans-serif; font-size: 0.7rem; color: #6e7a75; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }

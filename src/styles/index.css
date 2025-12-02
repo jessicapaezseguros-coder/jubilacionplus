@@ -1,0 +1,21 @@
+/* ---------------------------------------------------------
+   index.css — Reset y estilos globales
+---------------------------------------------------------- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* El body ya se define formalmente en App.css */
+body {
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Quitar resaltado azul en móviles */
+button,
+select,
+input {
+  outline: none;
+}

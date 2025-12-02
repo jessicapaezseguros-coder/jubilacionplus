@@ -1,0 +1,31 @@
+/* ============================================================
+   WHATSAPP BUTTON — Versión final mockup 2025
+   Botón institucional verde + sombra suave
+============================================================ */
+
+.wa-btn {
+  display: inline-block;
+  width: 100%;
+
+  background: #25d366;         /* verde WhatsApp institucional */
+  color: #ffffff;
+
+  padding: 12px 18px;
+  border-radius: 14px;
+
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+
+  cursor: pointer;
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+
+  transition: 0.25s ease-out;
+}
+
+.wa-btn:hover {
+  background: #1ebe5d;
+  transform: scale(1.03);
+}

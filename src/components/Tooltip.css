@@ -1,0 +1,89 @@
+/* src/components/Tooltip.css */
+
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  line-height: 1;
+  z-index: 50;
+  /* CLAVE: Aseguramos un ancho mínimo para que no se mueva */
+  min-width: 16px; 
+}
+
+/* ÍCONO */
+.tooltip-icon {
+  cursor: help;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #E0E5E4; 
+  color: #2F3624;            
+  font-family: 'Times New Roman', serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.tooltip-icon:hover {
+  background-color: #C9A449;
+  color: white;
+}
+
+/* CAJA FLOTANTE */
+.tooltip-box {
+  visibility: visible;
+  position: absolute;
+  bottom: 150%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  
+  background-color: #2F3624; 
+  color: #fff;
+  border: 1px solid #C9A449;
+  
+  padding: 8px 10px;
+  width: 180px;
+  border-radius: 4px;
+  
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  
+  opacity: 0;
+  animation: tooltipAppear 0.2s forwards;
+  pointer-events: none;
+}
+
+.tooltip-box::after {
+  content: "";
+  position: absolute;
+  top: 100%; left: 50%; margin-left: -5px;
+  border-width: 5px; border-style: solid;
+  border-color: #2F3624 transparent transparent transparent;
+}
+
+@keyframes tooltipAppear {
+  to { opacity: 1; }
+}
+
+@media (max-width: 450px) {
+  .tooltip-box {
+    width: 140px;
+    left: auto;
+    right: -10px;
+    transform: none;
+  }
+  .tooltip-box::after {
+    left: auto;
+    right: 14px;
+  }
+}

@@ -1,0 +1,85 @@
+/* src/components/QuestionsColumn.css */
+
+.questions-container {
+  padding: 0 5px; /* Padding lateral mínimo */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centrado vertical */
+}
+
+/* HEADER */
+.magazine-header { 
+  text-align: left; 
+  margin-bottom: 10px; 
+  border-bottom: 1px solid #C9A449; 
+  padding-bottom: 5px; 
+}
+.issue-date { font-size: 0.55rem; font-weight: 700; letter-spacing: 2px; color: #8FA8A2; display: block; margin-bottom: 2px; }
+.title-main { font-family: 'Playfair Display', serif; font-size: 2rem; line-height: 1; font-weight: 700; color: #2F3624; margin: 0; }
+.text-gold { color: #C9A449; font-style: italic; }
+.subtitle-main { font-size: 0.7rem; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #C9A449; }
+
+/* GRID BLOQUES */
+.grid-bloques { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+.card-bloque {
+  background: white; border: 1px solid #F0F0F0; padding: 12px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; 
+  display: flex; flex-direction: column; justify-content: center; min-height: 60px;
+}
+.card-bloque:hover { border-color: #C9A449; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.bloque-label { font-size: 0.7rem; font-weight: 800; color: #2F3624; text-transform: uppercase; margin-bottom: 2px; display: block; }
+.bloque-sub { font-size: 0.55rem; color: #8FA8A2; font-family: 'Playfair Display', serif; font-style: italic; }
+
+/* LISTA PREGUNTAS (COMPACTA SIN SCROLL) */
+.btn-back { background: none; border: none; color: #8FA8A2; font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 5px; font-size: 0.65rem; text-align: left; }
+.btn-back:hover { text-decoration: underline; color: #2F3624; }
+
+.section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin: 0 0 8px 0; color: #2F3624; text-align: left; }
+
+.list-preguntas { 
+  display: flex; flex-direction: column; 
+  gap: 0; /* Sin espacio extra entre items */
+  overflow: hidden; /* SCROLL ELIMINADO */
+}
+
+.btn-pregunta {
+  background: transparent; border: none; border-bottom: 1px solid #F5F5F5;
+  padding: 8px 2px; /* Padding vertical reducido */
+  text-align: left; font-size: 0.75rem; color: #555; cursor: pointer;
+  display: flex; justify-content: space-between; transition: 0.2s;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.btn-pregunta:hover { color: #C9A449; padding-left: 5px; }
+
+/* PIE DE PÁGINA FANTASMA (SUTIL) */
+.ia-footer-note {
+  margin-top: auto; /* Lo empuja al fondo */
+  padding-top: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 0.5rem; /* Extremadamente pequeño */
+  color: #E0E0E0; /* Gris muy claro, casi invisible */
+  font-style: italic;
+  text-align: left;
+  letter-spacing: 0.5px;
+}
+
+/* RESPUESTA */
+.respuesta-wrapper { margin-top: 5px; animation: slideIn 0.3s ease-out; }
+.respuesta-card {
+  background: #FAF7F0; border: 1px solid #EADFC7; border-left: 3px solid #C9A449; 
+  padding: 15px; border-radius: 4px; box-shadow: 0 5px 20px rgba(0,0,0,0.04);
+}
+.pregunta-en-ficha {
+  font-family: 'Playfair Display', serif; font-size: 1rem; color: #2F3624; margin: 0 0 8px 0; line-height: 1.2;
+  border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 5px;
+}
+.guru-text { font-family: 'Montserrat', sans-serif; font-size: 0.8rem; line-height: 1.5; color: #444; text-align: justify; }
+.guru-text strong { color: #2F3624; font-weight: 700; }
+.guru-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #EADFC7; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.guru-firma { font-family: 'Playfair Display', serif; font-weight: 700; color: #2F3624; font-size: 0.8rem; margin-bottom: 1px; }
+.guru-cargo { font-size: 0.55rem; text-transform: uppercase; color: #8A8A8A; letter-spacing: 1px; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { transform: translateY(0); } }

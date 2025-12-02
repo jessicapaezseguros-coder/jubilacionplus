@@ -1,0 +1,54 @@
+/* src/components/StabilityThermometer.css */
+
+.thermo-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* BARRA CONTENEDORA (RIEL) */
+.thermo-bar {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background-color: #EAEAEA;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.06);
+}
+
+/* SEGMENTOS */
+.thermo-segment {
+  height: 100%;
+  float: left;
+  width: 20%;
+  background: transparent;
+  border-right: 1px solid rgba(255,255,255,0.4);
+  transition: background 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- PALETA GLAMOUR --- */
+
+/* CRÍTICO: Bordó Profundo */
+.thermo-segment.active.crítico {
+  background: linear-gradient(90deg, #8B3A3A 0%, #A52A2A 100%);
+}
+
+/* MODERADO: ORO PURO INTENSO */
+.thermo-segment.active.moderado {
+  background: linear-gradient(90deg, #C9A449 0%, #D4AF37 100%); /* Degradado de Oro a Oro más fuerte */
+  box-shadow: 0 0 10px rgba(201, 164, 73, 0.6); 
+}
+
+/* ESTABLE: VERDE BOSQUE */
+.thermo-segment.active.estable {
+  background: linear-gradient(90deg, #2F3624 0%, #4D6862 100%);
+}
+
+/* EFECTO VIDRIO SUPERIOR */
+.thermo-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.6), transparent);
+  pointer-events: none;
+}
