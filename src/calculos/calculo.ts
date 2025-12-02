@@ -1,5 +1,4 @@
-import { EDAD_MIN, EDAD_MAX, JUBILACION_MINIMA_BPS } from "./reglas";
-import { generarIAResultado } from "../utils/ai"; 
+// src/calculos/calculo.ts
 
 const PISO_MINIMO = 18880; 
 const UMBRAL_CRITICO = 50000;
@@ -11,39 +10,65 @@ export function calcularJubilacion(params: any) {
 }
 
 function calcularBPS(params: any) {
-  const baseImponible = params.ingreso / 0.80;
-  let tasa = 45; // Simplificado para brevedad
-  let jubilacionMensual = Math.round((baseImponible * tasa) / 100);
+  // Cálculo BPS: Tasa de reemplazo sobre sueldo base (Simplificado)
+  const baseImponible = params.ingreso; // Sueldo Nominal
+  
+  // Tasa base 45% a los 60 años, + ~1-2% por año extra
+  // Si se retira a los 65, la tasa ronda el 50-55%
+  let tasaBase = 45;
+  if (params.edadRetiro > 60) tasaBase += (params.edadRetiro - 60) * 2;
+  if (tasaBase > 85) tasaBase = 85; // Tope legal
+
+  let jubilacionMensual = Math.round(baseImponible * (tasaBase / 100));
+  
+  // Mínimo BPS
   if (jubilacionMensual < PISO_MINIMO) jubilacionMensual = PISO_MINIMO;
 
-  const afap = params.aportaAFAP === "Sí" ? { saldo: 0, renta: 0 } : { saldo: 0, renta: 0 }; // Placeholder simple
-  const total = jubilacionMensual + afap.renta;
-  const nivel = total < UMBRAL_CRITICO ? "crítico" : "estable";
-
-  const analisisIA = generarIAResultado({ 
-      edad: params.edadActual, nivel, ingreso: params.ingreso, regimen: "BPS", aportaAFAP: params.aportaAFAP === "Sí"
-  });
+  // AFAP se calcula fuera y se pasa como parámetro, o se estima
+  const afapRenta = params.afapRenta || 0;
+  const total = jubilacionMensual + afapRenta;
+  
+  const nivel = total < UMBRAL_CRITICO ? "crítico" : "moderado";
 
   return {
-    regimen: "BPS", jubilacionMensual, afapSaldo: afap.saldo, afapRenta: afap.renta,
-    total, tasa: Math.round((total / params.ingreso) * 100), nivel, edadActual: params.edadActual,
-    analisisIA, // IMPORTANTE: Se devuelve aquí
+    regimen: "BPS",
+    jubilacionMensual,
+    afapRenta,
+    total,
+    tasa: Math.round((total / params.ingreso) * 100),
+    nivel,
+    edadActual: params.edadActual,
   };
 }
 
 function calcularCJPPU(params: any) {
-  // Lógica similar simplificada para asegurar funcionamiento
-  const ficto = 100000; // Placeholder si no encuentra escala
-  const jubilacionMensual = Math.round(ficto * 0.5);
-  const total = jubilacionMensual;
+  // --- FIX CRÍTICO: USAR FICTO REAL ---
+  // Antes estaba fijo en 100000 -> 50000. Ahora usa el input.
+  const ficto = params.ingreso; 
   
-  const analisisIA = generarIAResultado({ 
-      edad: params.edadActual, nivel: "moderado", ingreso: ficto, regimen: "CJPPU", aportaAFAP: params.aportaAFAP === "Sí"
-  });
+  // Tasa de Reemplazo CJPPU: 50% del promedio de fictos de los últimos 3 años (aprox)
+  // Bonificación: 0.5% por cada año que exceda los 30 de aporte.
+  const aniosExtra = Math.max(0, (params.aniosAporte || 0) - 30);
+  const tasaReemplazo = 50 + (aniosExtra * 0.5);
+
+  // CÁLCULO REAL
+  const jubilacionMensual = Math.round(ficto * (tasaReemplazo / 100));
+  
+  // La AFAP en Caja es voluntaria/aparte. Si viene calculada, se suma.
+  const afapRenta = params.afapRenta || 0;
+  
+  const total = jubilacionMensual + afapRenta;
+
+  // Nivel de riesgo (ajustado a montos profesionales)
+  const nivel = total < 45000 ? "crítico" : total < 90000 ? "moderado" : "estable";
 
   return {
-    regimen: "CJPPU", jubilacionMensual, afapSaldo: 0, afapRenta: 0,
-    total, tasa: 50, nivel: "moderado", edadActual: params.edadActual,
-    analisisIA,
+    regimen: "CJPPU",
+    jubilacionMensual, // Ahora sí es dinámico
+    afapRenta,
+    total,
+    tasa: Math.round(tasaReemplazo), 
+    nivel,
+    edadActual: params.edadActual,
   };
 }

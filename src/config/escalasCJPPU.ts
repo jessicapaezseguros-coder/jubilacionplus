@@ -4,15 +4,14 @@ export type Escalon = {
   id: number;
   label: string;
   ficto: number;
-  cuota: number; // Base cálculo
+  cuota: number;
 };
 
 // =============================================================================
 // VALORES BASE 2025 (Vigencia 01/01/2025)
-// Fictos Nominales Aproximados
+// Copia EXACTA de la tabla oficial para el régimen de 10 Categorías
 // =============================================================================
 
-// RÉGIMEN ANTERIOR (10 CATEGORÍAS) - Para nacidos hasta el 31/12/1984
 const BASE_10: Escalon[] = [
   { id: 1, label: "Cat. 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Cat. 2", ficto: 65565, cuota: 12196 },
@@ -23,10 +22,11 @@ const BASE_10: Escalon[] = [
   { id: 7, label: "Cat. 7", ficto: 165708, cuota: 30822 },
   { id: 8, label: "Cat. 8", ficto: 174761, cuota: 32506 },
   { id: 9, label: "Cat. 9", ficto: 180255, cuota: 33527 },
-  { id: 10, label: "Cat. 10", ficto: 182018, cuota: 33855 },
+  { id: 10, label: "Cat. 10", ficto: 182018, cuota: 33855 }, // Valor exacto solicitado
 ];
 
-// NUEVO RÉGIMEN (15 NIVELES) - Para nacidos desde el 01/01/1985
+// NUEVO RÉGIMEN (15 NIVELES)
+// Interpolación lineal respetando los extremos de la tabla oficial
 const BASE_15: Escalon[] = [
   { id: 1, label: "Nivel 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Nivel 2", ficto: 45185, cuota: 8405 },
@@ -45,46 +45,52 @@ const BASE_15: Escalon[] = [
   { id: 15, label: "Nivel 15", ficto: 182018, cuota: 33855 },
 ];
 
-// TASA DE AJUSTE DE FICTO (Inflación/IMS estimada anual para el valor base)
+// Tasa de ajuste por inflación (4% anual)
 const TASA_INFLACION_FICTO = 0.04; 
 
-// TASAS DE APORTE (CUOTA) SEGÚN DECRETO 11/2024
-// Aumentan progresivamente a partir de 2026
+// Tasas de aporte crecientes por decreto
 const TASAS_POR_ANO: Record<number, number> = {
-    2025: 0.185, // 18.5% (Actual)
-    2026: 0.205, // 20.5% (Suba decreto)
-    2027: 0.215, // 21.5% (Suba decreto)
-    2028: 0.225, // 22.5% (Suba decreto - Tope)
+    2025: 0.186, // Tasa base implícita 2025
+    2026: 0.205, 
+    2027: 0.215, 
+    2028: 0.225, 
 };
 
 export function obtenerEscalonesPorAno(anioObjetivo: number, edadActual: number): Escalon[] {
   const anioBase = 2025;
   const diferencia = anioObjetivo - anioBase;
   
-  // CORTE DE EDAD NORMATIVA:
-  // Nacidos después del 31/12/1984 (<= 40 años en 2025) van al régimen de 15 niveles.
+  // Corte de edad: 40 años (nacidos después de 1984 van al nuevo sistema)
   const escalaBase = edadActual <= 40 ? BASE_15 : BASE_10;
-
-  // Determinar la tasa de aporte que corresponde al año seleccionado
-  // Si es > 2028, mantenemos la tasa tope de 2028 (22.5%)
-  const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.185);
 
   const fmt = (n: number) => n.toLocaleString('es-UY');
 
+  // CASO 1: AÑO ACTUAL (2025)
+  // Devolvemos los valores EXACTOS de la tabla, sin tocar nada.
+  if (diferencia <= 0) return escalaBase.map(e => ({
+      ...e,
+      label: `${e.label} — Ficto $${fmt(e.ficto)} (Cuota $${fmt(e.cuota)})`
+  }));
+
+  // CASO 2: PROYECCIÓN FUTURA (2026 en adelante)
   return escalaBase.map(escalon => {
-    // 1. Proyectar el FICTO (Sube por inflación acumulada, no por decreto de tasa)
+    // 1. Proyectamos el ficto por inflación
     const fictoProy = Math.round(escalon.ficto * Math.pow(1 + TASA_INFLACION_FICTO, diferencia));
     
-    // 2. Calcular la CUOTA REAL según Decreto
-    // Fórmula: Ficto Proyectado * Tasa del Año correspondiente + Gastos Admin/Salud (estimado 4.5%)
-    const gastosAdmin = Math.round(fictoProy * 0.045); 
-    const cuotaProy = Math.round((fictoProy * tasaAnio) + gastosAdmin);
+    // 2. Calculamos la nueva cuota con la tasa aumentada del decreto
+    const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.186);
+    
+    // Reconstruimos los gastos fijos implícitos para proyectarlos también
+    const cuotaTeoricaBase = escalon.ficto * 0.186; 
+    const gastosBase = escalon.cuota - cuotaTeoricaBase;
+    const gastosProy = gastosBase * Math.pow(1 + TASA_INFLACION_FICTO, diferencia);
+
+    const cuotaProy = Math.round((fictoProy * tasaAnio) + gastosProy);
 
     return {
       id: escalon.id,
       ficto: fictoProy,
       cuota: cuotaProy,
-      // Etiqueta informativa para el selector
       label: `${escalon.label} — Ficto $${fmt(fictoProy)} (Cuota $${fmt(cuotaProy)})`
     };
   });
