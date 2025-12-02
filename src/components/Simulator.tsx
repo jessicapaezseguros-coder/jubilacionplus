@@ -12,16 +12,15 @@ export default function Simulator({ setResultados }: any) {
   const [edadCalculada, setEdadCalculada] = useState(0);
   const [edadRetiro, setEdadRetiro] = useState("65");
   const [anioSimulacion, setAnioSimulacion] = useState(2025);
-  // Cambiado de "Sueldo Líquido" a "Sueldo Nominal" para el cálculo BPS
-  const [ingreso, setIngreso] = useState(""); 
+  const [ingreso, setIngreso] = useState("");
   const [aniosAporte, setAniosAporte] = useState("");
+  // La pregunta de AFAP existe solo en el estado, pero se oculta si es Caja
   const [afap, setAfap] = useState("Sí"); 
   
   const [escalones, setEscalones] = useState<any[]>([]);
   const [categoriaIdx, setCategoriaIdx] = useState(0); 
   const [error, setError] = useState("");
 
-  // CALCULAR EDAD
   useEffect(() => {
     if (fechaNac) {
       const hoy = new Date();
@@ -33,7 +32,6 @@ export default function Simulator({ setResultados }: any) {
     }
   }, [fechaNac]);
 
-  // ACTUALIZAR ESCALAS
   useEffect(() => {
     const edadParaEscala = edadCalculada > 0 ? edadCalculada : 40;
     const nuevasEscalas = obtenerEscalonesPorAno(anioSimulacion, edadParaEscala);
@@ -45,10 +43,8 @@ export default function Simulator({ setResultados }: any) {
       const retiroNum = Number(edadRetiro);
       const aporteNum = Number(aniosAporte);
 
-      const edadMinima = edadCalculada >= 50 ? 60 : 65;
-
       if (edadCalculada < 18) { setError("Fecha de nacimiento inválida."); return; }
-      if (retiroNum < edadMinima) { setError(`Para tu régimen, la edad mínima es ${edadMinima} años.`); return; }
+      if (retiroNum < 65) { setError("La edad mínima de retiro es 65 años (Ley 20.130)."); return; }
       
       let ingresoCalculo = 0;
       let datosCaja = null;
@@ -69,11 +65,11 @@ export default function Simulator({ setResultados }: any) {
       }
 
       setError(""); 
-      const tieneAfap = afap === "Sí";
+      // LA VARIABLE 'tieneAfap' AQUI SOLO DEBE SER TRUE SI ES BPS y selecciona Sí
+      const tieneAfapParaCalculo = (afap === "Sí" && regimen === 'BPS');
 
       let rentaAfapEstimada = 0;
-      if (tieneAfap) {
-          // Estimación AFAP (12% del Ficto/Sueldo Nominal)
+      if (tieneAfapParaCalculo) {
           rentaAfapEstimada = Math.round(ingresoCalculo * 0.12);
       }
 
@@ -83,8 +79,8 @@ export default function Simulator({ setResultados }: any) {
         edadActual: edadCalculada, 
         edadRetiro: retiroNum, 
         aniosAporte: aporteNum || 0, 
-        aportaAFAP: tieneAfap, 
-        afapRenta: rentaAfapEstimada, // Pasamos la estimación
+        aportaAFAP: tieneAfapParaCalculo, 
+        afapRenta: rentaAfapEstimada, 
         anioProyeccion: anioSimulacion
       };
       
@@ -98,7 +94,7 @@ export default function Simulator({ setResultados }: any) {
             nivel: resultadoNumerico.nivel,
             ingreso: ingresoCalculo,
             regimen: regimen,
-            aportaAFAP: tieneAfap
+            aportaAFAP: tieneAfapParaCalculo
         });
 
         setResultados({ ...resultadoNumerico, analisisIA, datosCajaExtra: datosCaja });
@@ -121,8 +117,8 @@ export default function Simulator({ setResultados }: any) {
                     <input className="sim-input" type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)} />
                 </div>
                 <div className="field-group" style={{flex: 1}}>
-                    <label>Edad Retiro <Tooltip text="Mínimo 60/65 años." /></label>
-                    <input className="sim-input" type="number" placeholder={edadCalculada >= 50 ? "60" : "65"} value={edadRetiro} onChange={e=>setEdadRetiro(e.target.value)} />
+                    <label>Edad Retiro <Tooltip text="Mínimo 65 años (Ley 20.130)." /></label>
+                    <input className="sim-input" type="number" placeholder="65" value={edadRetiro} onChange={e=>setEdadRetiro(e.target.value)} />
                 </div>
              </div>
 
@@ -134,15 +130,17 @@ export default function Simulator({ setResultados }: any) {
              </div>
 
              {regimen === 'BPS' ? (
+                // CAMPOS BPS
                 <div className="field-group">
                     <label>Sueldo Nominal ($) <Tooltip text="Ingreso bruto antes de descuentos." /></label>
                     <input className="sim-input" type="number" placeholder="Ej: 80000" value={ingreso} onChange={e=>setIngreso(e.target.value)} />
                 </div>
              ) : (
+                // CAMPOS CJPPU
                 <div className="field-group">
                     <label>
                         Categoría Proyectada ({anioSimulacion})
-                        <Tooltip text="Ficto actualizado." />
+                        <Tooltip text="Ficto actualizado por IMS estimado." />
                     </label>
                     <select className="sim-select" value={categoriaIdx} onChange={e => setCategoriaIdx(Number(e.target.value))}>
                         {escalones.map((cat, idx) => (
@@ -154,16 +152,20 @@ export default function Simulator({ setResultados }: any) {
 
              <div className="fields-row">
                 <div className="field-group">
-                    <label>Años Aporte <Tooltip text="Reconocidos." /></label>
+                    <label>Años Aporte <Tooltip text="Total reconocidos." /></label>
                     <input className="sim-input" type="number" placeholder="Ej: 20" value={aniosAporte} onChange={e=>setAniosAporte(e.target.value)} />
                 </div>
-                <div className="field-group">
-                    <label>¿Tenés AFAP? <Tooltip text="Complemento." /></label>
-                    <select className="sim-select" value={afap} onChange={e => setAfap(e.target.value)}>
-                        <option value="Sí">Sí</option>
-                        <option value="No">No</option>
-                    </select>
-                </div>
+                
+                {/* CAMPO AFAP: SOLO APARECE SI ES BPS */}
+                {regimen === 'BPS' && (
+                    <div className="field-group">
+                        <label>¿Tenés AFAP? <Tooltip text="Complemento." /></label>
+                        <select className="sim-select" value={afap} onChange={e => setAfap(e.target.value)}>
+                            <option value="Sí">Sí</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                )}
              </div>
         </div>
 
