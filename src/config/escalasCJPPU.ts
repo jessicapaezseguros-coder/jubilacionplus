@@ -4,14 +4,15 @@ export type Escalon = {
   id: number;
   label: string;
   ficto: number;
-  cuota: number;
+  cuota: number; // Base cálculo
 };
 
 // =============================================================================
 // VALORES BASE 2025 (Vigencia 01/01/2025)
+// Fictos Nominales Aproximados
 // =============================================================================
 
-// RÉGIMEN ANTERIOR (10 CATEGORÍAS) - Para mayores de 40 años
+// RÉGIMEN ANTERIOR (10 CATEGORÍAS) - Para nacidos hasta el 31/12/1984
 const BASE_10: Escalon[] = [
   { id: 1, label: "Cat. 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Cat. 2", ficto: 65565, cuota: 12196 },
@@ -25,7 +26,7 @@ const BASE_10: Escalon[] = [
   { id: 10, label: "Cat. 10", ficto: 182018, cuota: 33855 },
 ];
 
-// NUEVO RÉGIMEN (15 NIVELES) - Para menores de 40 años (Nacidos > 1984)
+// NUEVO RÉGIMEN (15 NIVELES) - Para nacidos desde el 01/01/1985
 const BASE_15: Escalon[] = [
   { id: 1, label: "Nivel 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Nivel 2", ficto: 45185, cuota: 8405 },
@@ -44,47 +45,46 @@ const BASE_15: Escalon[] = [
   { id: 15, label: "Nivel 15", ficto: 182018, cuota: 33855 },
 ];
 
-// TASA DE AJUSTE FICTO (Inflación/IMS estimada anual)
-const TASA_INFLACION = 0.04; 
+// TASA DE AJUSTE DE FICTO (Inflación/IMS estimada anual para el valor base)
+const TASA_INFLACION_FICTO = 0.04; 
 
-// TASAS DE APORTE SEGÚN DECRETO 11/2024
-// 2025: 18.5% | 2026: 20.5% | 2027: 21.5% | 2028+: 22.5%
+// TASAS DE APORTE (CUOTA) SEGÚN DECRETO 11/2024
+// Aumentan progresivamente a partir de 2026
 const TASAS_POR_ANO: Record<number, number> = {
-    2025: 0.186, // Ajustado al real de la tabla (~18.6%)
-    2026: 0.205, 
-    2027: 0.215, 
-    2028: 0.225, 
+    2025: 0.185, // 18.5% (Actual)
+    2026: 0.205, // 20.5% (Suba decreto)
+    2027: 0.215, // 21.5% (Suba decreto)
+    2028: 0.225, // 22.5% (Suba decreto - Tope)
 };
 
 export function obtenerEscalonesPorAno(anioObjetivo: number, edadActual: number): Escalon[] {
   const anioBase = 2025;
   const diferencia = anioObjetivo - anioBase;
   
-  // CORTE DE EDAD: 40 Años (Generación 1985)
-  // < 40 en 2025 -> Nuevo Régimen | >= 40 -> Régimen Anterior
-  const escalaBase = edadActual < 41 ? BASE_15 : BASE_10;
+  // CORTE DE EDAD NORMATIVA:
+  // Nacidos después del 31/12/1984 (<= 40 años en 2025) van al régimen de 15 niveles.
+  const escalaBase = edadActual <= 40 ? BASE_15 : BASE_10;
 
   // Determinar la tasa de aporte que corresponde al año seleccionado
-  // Si es > 2028, usamos la tasa de 2028 (22.5%)
-  const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.186);
+  // Si es > 2028, mantenemos la tasa tope de 2028 (22.5%)
+  const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.185);
 
   const fmt = (n: number) => n.toLocaleString('es-UY');
 
   return escalaBase.map(escalon => {
-    // 1. Proyectar el FICTO (Sube por inflación acumulada)
-    const fictoProy = Math.round(escalon.ficto * Math.pow(1 + TASA_INFLACION, diferencia));
+    // 1. Proyectar el FICTO (Sube por inflación acumulada, no por decreto de tasa)
+    const fictoProy = Math.round(escalon.ficto * Math.pow(1 + TASA_INFLACION_FICTO, diferencia));
     
-    // 2. Calcular la CUOTA (Ficto Proyectado * Tasa del Decreto del año elegido)
-    // Nota: La cuota base 2025 ya incluye gastos, así que aplicamos la tasa pura sobre el nuevo ficto
-    // y sumamos un pequeño diferencial de gastos administrativos (~150 pesos ajustados)
-    const gastosAdmin = Math.round(150 * Math.pow(1 + TASA_INFLACION, diferencia));
+    // 2. Calcular la CUOTA REAL según Decreto
+    // Fórmula: Ficto Proyectado * Tasa del Año correspondiente + Gastos Admin/Salud (estimado 4.5%)
+    const gastosAdmin = Math.round(fictoProy * 0.045); 
     const cuotaProy = Math.round((fictoProy * tasaAnio) + gastosAdmin);
 
     return {
       id: escalon.id,
       ficto: fictoProy,
       cuota: cuotaProy,
-      // Etiqueta para el dropdown
+      // Etiqueta informativa para el selector
       label: `${escalon.label} — Ficto $${fmt(fictoProy)} (Cuota $${fmt(cuotaProy)})`
     };
   });

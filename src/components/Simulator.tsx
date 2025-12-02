@@ -20,7 +20,7 @@ export default function Simulator({ setResultados }: any) {
   const [categoriaIdx, setCategoriaIdx] = useState(0); 
   const [error, setError] = useState("");
 
-  // CALCULAR EDAD
+  // 1. CALCULAR EDAD AL CAMBIAR FECHA
   useEffect(() => {
     if (fechaNac) {
       const hoy = new Date();
@@ -32,7 +32,7 @@ export default function Simulator({ setResultados }: any) {
     }
   }, [fechaNac]);
 
-  // ACTUALIZAR ESCALAS
+  // 2. ACTUALIZAR ESCALAS (10 vs 15) Y PROYECCIÓN
   useEffect(() => {
     const edadParaEscala = edadCalculada > 0 ? edadCalculada : 40;
     const nuevasEscalas = obtenerEscalonesPorAno(anioSimulacion, edadParaEscala);
@@ -44,27 +44,33 @@ export default function Simulator({ setResultados }: any) {
       const retiroNum = Number(edadRetiro);
       const aporteNum = Number(aniosAporte);
 
+      // Lógica de Edad de Retiro (Transición vs Nuevo)
+      const edadMinima = edadCalculada >= 50 ? 60 : 65;
+
       if (edadCalculada < 18) { setError("Fecha de nacimiento inválida."); return; }
-      if (retiroNum < 60) { setError("Edad de retiro mínima 60 años."); return; }
+      
+      if (retiroNum < edadMinima) { 
+          setError(`Para tu régimen, la edad mínima es ${edadMinima} años.`); 
+          return; 
+      }
       
       let ingresoCalculo = 0;
       let datosCaja = null;
 
       if (regimen === 'BPS') {
           ingresoCalculo = Number(ingreso);
-          if (!ingresoCalculo || ingresoCalculo <= 0) { setError("Ingresa un sueldo líquido válido."); return; }
+          if (!ingresoCalculo || ingresoCalculo <= 0) { setError("Ingresa un sueldo válido."); return; }
       } else {
-          // CORRECCIÓN CRÍTICA: Usamos SOLO el FICTO como base de cálculo
           const seleccion = escalones[categoriaIdx];
           if (!seleccion) return;
           
-          // La base para calcular la jubilación es el FICTO, NO la cuota.
-          ingresoCalculo = seleccion.ficto; 
+          // Usamos el FICTO como base de cálculo
+          ingresoCalculo = seleccion.ficto;
           
           datosCaja = {
               categoria: seleccion.label.split('—')[0].trim(),
               ficto: seleccion.ficto,
-              cuota: seleccion.cuota // Solo informativo
+              cuota: seleccion.cuota
           };
       }
 
@@ -73,7 +79,7 @@ export default function Simulator({ setResultados }: any) {
 
       const paramsMatematicos = { 
         regimen, 
-        ingreso: ingresoCalculo, // Aquí va el Ficto puro o el Sueldo BPS
+        ingreso: ingresoCalculo, 
         edadActual: edadCalculada, 
         edadRetiro: retiroNum, 
         aniosAporte: aporteNum || 0, 
@@ -84,17 +90,14 @@ export default function Simulator({ setResultados }: any) {
       try {
         const resultadoNumerico = calcularJubilacion(paramsMatematicos);
         
+        // FIX AFAP: Forzamos estimación si el usuario tiene AFAP pero el cálculo dio 0
         if (tieneAfap && (!resultadoNumerico.afapRenta || resultadoNumerico.afapRenta === 0)) {
-            // Estimación AFAP basada en el ingreso base (Ficto o Sueldo)
-            resultadoNumerico.afapRenta = Math.round(ingresoCalculo * 0.12);
+            resultadoNumerico.afapRenta = Math.round(ingresoCalculo * 0.12); 
             resultadoNumerico.total = resultadoNumerico.jubilacionMensual + resultadoNumerico.afapRenta;
             resultadoNumerico.tasa = (resultadoNumerico.total / ingresoCalculo) * 100;
         }
 
-        if (!isFinite(resultadoNumerico.total)) { 
-            setError("Error en el cálculo."); 
-            return; 
-        }
+        if (!isFinite(resultadoNumerico.total)) { setError("Error en el cálculo."); return; }
 
         const analisisIA = generarIAResultado({
             edad: edadCalculada,
@@ -104,7 +107,14 @@ export default function Simulator({ setResultados }: any) {
             aportaAFAP: tieneAfap
         });
 
-        setResultados({ ...resultadoNumerico, analisisIA, datosCajaExtra: datosCaja });
+        // Enviamos todo a la pantalla de resultados
+        setResultados({ 
+            ...resultadoNumerico, 
+            analisisIA, 
+            datosCajaExtra: datosCaja,
+            anioProyeccion: anioSimulacion 
+        });
+
       } catch (e) { setError("Ocurrió un error inesperado."); }
   };
   
@@ -124,8 +134,11 @@ export default function Simulator({ setResultados }: any) {
                     <input className="sim-input" type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)} />
                 </div>
                 <div className="field-group" style={{flex: 1}}>
-                    <label>Edad Retiro <Tooltip text="Mínimo 65 años (Ley 20.130)." /></label>
-                    <input className="sim-input" type="number" placeholder="65" value={edadRetiro} onChange={e=>setEdadRetiro(e.target.value)} />
+                    <label>
+                        Edad Retiro 
+                        <Tooltip text={edadCalculada >= 50 ? "Mínimo 60 años (Transición)." : "Mínimo 65 años (Ley 20.130)."} />
+                    </label>
+                    <input className="sim-input" type="number" placeholder={edadCalculada >= 50 ? "60" : "65"} value={edadRetiro} onChange={e=>setEdadRetiro(e.target.value)} />
                 </div>
              </div>
 
@@ -141,8 +154,8 @@ export default function Simulator({ setResultados }: any) {
 
              {regimen === 'BPS' ? (
                 <div className="field-group">
-                    <label>Sueldo Líquido ($) <Tooltip text="Ingreso promedio mensual aproximado." /></label>
-                    <input className="sim-input" type="number" placeholder="Ej: 60000" value={ingreso} onChange={e=>setIngreso(e.target.value)} />
+                    <label>Sueldo Nominal ($) <Tooltip text="Ingreso bruto antes de descuentos." /></label>
+                    <input className="sim-input" type="number" placeholder="Ej: 80000" value={ingreso} onChange={e=>setIngreso(e.target.value)} />
                 </div>
              ) : (
                 <div className="field-group">
@@ -174,7 +187,8 @@ export default function Simulator({ setResultados }: any) {
         </div>
 
         {error && <p className="error-msg">{error}</p>}
-        {edadCalculada > 0 && <p className="info-edad">Edad: {edadCalculada} años • Régimen: {edadCalculada >= 50 ? 'Transición (10 Cat)' : 'Nuevo (15 Niveles)'}</p>}
+        
+        {/* AQUÍ SE ELIMINÓ EL TEXTO DE EDAD/RÉGIMEN QUE MOLESTABA */}
 
         <button className="btn-calculate" onClick={handleCalculate}>CALCULAR</button>
     </div>
