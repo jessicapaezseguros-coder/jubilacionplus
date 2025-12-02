@@ -7,11 +7,7 @@ export type Escalon = {
   cuota: number;
 };
 
-// =============================================================================
 // VALORES BASE 2025 (Vigencia 01/01/2025)
-// Copia EXACTA de la tabla oficial para el régimen de 10 Categorías
-// =============================================================================
-
 const BASE_10: Escalon[] = [
   { id: 1, label: "Cat. 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Cat. 2", ficto: 65565, cuota: 12196 },
@@ -22,11 +18,10 @@ const BASE_10: Escalon[] = [
   { id: 7, label: "Cat. 7", ficto: 165708, cuota: 30822 },
   { id: 8, label: "Cat. 8", ficto: 174761, cuota: 32506 },
   { id: 9, label: "Cat. 9", ficto: 180255, cuota: 33527 },
-  { id: 10, label: "Cat. 10", ficto: 182018, cuota: 33855 }, // Valor exacto solicitado
+  { id: 10, label: "Cat. 10", ficto: 182018, cuota: 33855 },
 ];
 
 // NUEVO RÉGIMEN (15 NIVELES)
-// Interpolación lineal respetando los extremos de la tabla oficial
 const BASE_15: Escalon[] = [
   { id: 1, label: "Nivel 1", ficto: 34660, cuota: 6447 },
   { id: 2, label: "Nivel 2", ficto: 45185, cuota: 8405 },
@@ -45,12 +40,10 @@ const BASE_15: Escalon[] = [
   { id: 15, label: "Nivel 15", ficto: 182018, cuota: 33855 },
 ];
 
-// Tasa de ajuste por inflación (4% anual)
 const TASA_INFLACION_FICTO = 0.04; 
 
-// Tasas de aporte crecientes por decreto
 const TASAS_POR_ANO: Record<number, number> = {
-    2025: 0.186, // Tasa base implícita 2025
+    2025: 0.186,
     2026: 0.205, 
     2027: 0.215, 
     2028: 0.225, 
@@ -60,29 +53,22 @@ export function obtenerEscalonesPorAno(anioObjetivo: number, edadActual: number)
   const anioBase = 2025;
   const diferencia = anioObjetivo - anioBase;
   
-  // Corte de edad: 40 años (nacidos después de 1984 van al nuevo sistema)
   const escalaBase = edadActual <= 40 ? BASE_15 : BASE_10;
-
   const fmt = (n: number) => n.toLocaleString('es-UY');
 
-  // CASO 1: AÑO ACTUAL (2025)
-  // Devolvemos los valores EXACTOS de la tabla, sin tocar nada.
   if (diferencia <= 0) return escalaBase.map(e => ({
       ...e,
       label: `${e.label} — Ficto $${fmt(e.ficto)} (Cuota $${fmt(e.cuota)})`
   }));
 
-  // CASO 2: PROYECCIÓN FUTURA (2026 en adelante)
   return escalaBase.map(escalon => {
-    // 1. Proyectamos el ficto por inflación
     const fictoProy = Math.round(escalon.ficto * Math.pow(1 + TASA_INFLACION_FICTO, diferencia));
     
-    // 2. Calculamos la nueva cuota con la tasa aumentada del decreto
-    const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.186);
+    const tasaAnio = anioObjetivo > 2028 ? 0.225 : (TASAS_POR_ANO[anioObjetivo] || 0.185);
     
-    // Reconstruimos los gastos fijos implícitos para proyectarlos también
-    const cuotaTeoricaBase = escalon.ficto * 0.186; 
+    const cuotaTeoricaBase = escalon.ficto * 0.186;
     const gastosBase = escalon.cuota - cuotaTeoricaBase;
+    
     const gastosProy = gastosBase * Math.pow(1 + TASA_INFLACION_FICTO, diferencia);
 
     const cuotaProy = Math.round((fictoProy * tasaAnio) + gastosProy);
