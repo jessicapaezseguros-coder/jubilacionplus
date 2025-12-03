@@ -6,7 +6,7 @@ import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
 // URL DE APPS SCRIPT APLICADA (Usando la última URL proporcionada)
-const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbzFRSYBYXvuf3HJD2uoNJo_PpkojYsXAwYu3eme-xmkf3CT1f1Lv9iMGVDqUhHwX0UI/exec"; 
+const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbybNLnOwM4EjRlVyxv1098RajU0tqzbkig_ZhX4P388iu-D7gutoFLmiI5nbBzU-mJG/exec"; 
 
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
 
