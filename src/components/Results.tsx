@@ -1,27 +1,108 @@
+// Archivo: Results.tsx
+
 import React, { useState } from 'react';
 import { generarPDF } from '../utils/pdfGenerator';
 import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
+// URL DE APPS SCRIPT APLICADA (Usando la última URL proporcionada)
+const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbzFRSYBYXvuf3HJD2uoNJo_PpkojYsXAwYu3eme-xmkf3CT1f1Lv9iMGVDqUhHwX0UI/exec"; 
+
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
+
+const isValidEmail = (email: string) => {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+};
 
 export default function Results({ data, onReset }: any) {
   const ia = data.analisisIA || { nivel: '', edad: '', regimen: '', productos: '' };
   const datosCaja = data.datosCajaExtra; 
   
-  // DISCLAIMER LIMPIO
   const disclaimerText = "AVISO LEGAL: La presente herramienta tiene carácter estrictamente educativo y orientativo. Los cálculos y proyecciones se realizan en base a modelos simplificados de los regímenes previsionales uruguayos (BPS y CJPPU), sin sustituir la información oficial ni constituir asesoramiento profesional. Los resultados NO garantizan montos futuros. Para efectos oficiales debe recurrirse a los organismos competentes.";
 
   const categoriaLimpia = datosCaja ? datosCaja.categoria.split('—')[0].trim() : '';
   
-  // Estados para descarga
+  // Nuevo estado para controlar si mostramos el formulario de email
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  
+  // Estados para descarga/envío de PDF y Email
   const [sendStatus, setSendStatus] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [mailSent, setMailSent] = useState(false); 
 
-  const handleDownload = () => {
-    setSendStatus('loading');
+
+  // Función que se llama al presionar el botón de PDF
+  const handleDownloadClick = () => {
+    if (mailSent) {
+      handleDownloadOnly();
+    } else {
+      setShowEmailForm(true);
+    }
+  };
+
+  // Función para manejar el envío del correo a Google Sheets
+  const handleEmailSubmit = async () => {
+    if (!isValidEmail(email)) {
+        setEmailError("Ingresa un correo electrónico válido.");
+        return;
+    }
+    
+    setEmailError('');
+    setSendStatus('sending');
+    
+    const payload = {
+        email: email,
+        regimen: data.regimen || 'N/A', 
+        edad: data.edadActual || 0, 
+        jubilacionEstimada: data.total,
+        tasaReemplazo: data.tasa
+    };
+
+    try {
+        const response = await fetch(GOOGLE_SHEET_ENDPOINT, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload), 
+        });
+
+        const responseText = await response.text();
+        
+        if (response.ok && responseText.includes("exitoso")) {
+            setMailSent(true);
+            generarPDF(data);
+            setSendStatus('downloading');
+            setTimeout(() => { setSendStatus('success'); }, 1500); 
+        } else {
+            setSendStatus('error');
+            // Muestra error de conexión/servidor
+            setEmailError('Error al registrar. Revisa tu conexión o intenta más tarde.'); 
+        }
+
+    } catch (e) {
+        console.error("Fetch error:", e);
+        setSendStatus('error');
+        setEmailError('Fallo de conexión. Intenta más tarde.');
+    }
+  };
+  
+  // Función para manejar solo la descarga del PDF (una vez el mail ha sido enviado)
+  const handleDownloadOnly = () => {
+    setSendStatus('downloading');
     generarPDF(data); 
     setTimeout(() => { setSendStatus('success'); }, 1500); 
   };
+  
+  // Lógica para determinar el texto del botón del formulario
+  let submitButtonText = 'ENVIAR Y OBTENER PDF'; 
+  if (sendStatus === 'sending') submitButtonText = 'ENVIANDO...';
+  if (sendStatus === 'downloading') submitButtonText = 'GENERANDO PDF...';
+  if (sendStatus === 'success') submitButtonText = '¡PDF LISTO!';
+
 
   return (
     <div className="results-dashboard fade-in">
@@ -48,7 +129,7 @@ export default function Results({ data, onReset }: any) {
 
       <div className="dash-grid-3col">
         
-        {/* COL 1: TÉCNICO */}
+        {/* COL 1: TÉCNICO (Sin cambios) */}
         <div className="card-panel panel-tech">
             <h3 className="panel-heading">DETALLE TÉCNICO</h3>
             
@@ -60,7 +141,6 @@ export default function Results({ data, onReset }: any) {
                     <div className="divider"></div>
                     <div className="breakdown-row highlight-row"><span>Base Caja</span> <strong>{format(data.jubilacionMensual)}</strong></div>
                     
-                    {/* AQUÍ SE MUESTRA LA AFAP EN CAJA */}
                     {(data.afapRenta > 0) ? (
                         <div className="breakdown-row afap-row"><span>+ Renta AFAP</span> <span className="val-bold">{format(data.afapRenta)}</span></div>
                     ) : (
@@ -89,7 +169,7 @@ export default function Results({ data, onReset }: any) {
             </div>
         </div>
 
-        {/* COL 2: IA */}
+        {/* COL 2: IA (Sin cambios) */}
         <div className="card-panel panel-ia">
             <h3 className="panel-heading">DIAGNÓSTICO PROFESIONAL</h3>
             <div className="diag-scroll">
@@ -100,28 +180,82 @@ export default function Results({ data, onReset }: any) {
             </div>
         </div>
 
-        {/* COL 3: CTA */}
+        {/* COL 3: CTA - CORREGIDO */}
         <div className="card-panel panel-cta">
-            <h3 className="panel-heading">¿QUERÉS COMPLEMENTAR?</h3>
+            <h3 className="panel-heading">¿QUERÉS COMPLEMENTAR?</h3> 
+            
+            {/* Beneficios originales */}
             <ul className="cta-benefits">
                 <li>• Planes de Seguros personales.</li>
                 <li>• Cotización simple a tu medida.</li>
                 <li>• Asesoría 1:1 sin costo.</li>
             </ul>
             
+            {/* Contenedor de Formulario/Botón principal */}
+            
+            {!showEmailForm && !mailSent ? (
+                // 1. MUESTRA EL BOTÓN INICIAL DE DESCARGA
+                <div className="cta-action-box">
+                    <p className="cta-txt">Revisamos juntos tu situación y armamos un plan sin costo.</p>
+                    <button 
+                        className="btn-send" 
+                        onClick={handleDownloadClick} // Muestra el formulario
+                    >
+                        OBTENER PDF
+                    </button>
+                </div>
+            ) : (
+                 // 2. MUESTRA EL FORMULARIO O EL MENSAJE DE ÉXITO
+                <div className="email-form">
+                    <p className="cta-txt" style={{marginBottom: '8px', marginTop: '0'}}>Ingresa tu email para recibir el PDF en tu correo.</p>
+                    
+                    <div className="email-input-wrapper">
+                        {!mailSent ? (
+                            <>
+                                <input 
+                                    className="email-input-field" 
+                                    type="email" 
+                                    placeholder="tu.correo@ejemplo.com" 
+                                    value={email} 
+                                    onChange={e => setEmail(e.target.value)} 
+                                    disabled={sendStatus === 'sending'}
+                                />
+                                <label className="checkbox-label">
+                                    <input type="checkbox" defaultChecked disabled />
+                                    Acepto la política de privacidad y recibir información comercial.
+                                </label>
+
+                                <button 
+                                    className="btn-send" 
+                                    onClick={handleEmailSubmit}
+                                    disabled={sendStatus === 'sending' || sendStatus === 'downloading'}
+                                >
+                                    {submitButtonText}
+                                </button>
+                                {emailError && <p className="error-msg" style={{marginTop: '5px'}}>{emailError}</p>}
+                            </>
+                        ) : (
+                            <div className="success-message">
+                                ✅ ¡Email registrado!
+                                <button className="btn-send" onClick={handleDownloadOnly} disabled={sendStatus === 'downloading'} style={{marginTop: '5px'}}>
+                                    {sendStatus === 'downloading' ? 'Generando...' : 'Descargar de nuevo'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
+            {/* Pie de página CTA (Firma y Contacto) */}
             <div className="cta-footer">
-                <p className="cta-txt">Revisamos juntos tu situación y armamos un plan sin costo.</p>
                 <div className="cta-signature">
-                    <strong>Lic. Jessica Páez</strong>
-                    <span>Asesora Técnica en Seguros Personales</span>
+                    {/* Fusión de Nombre y Cargo */}
+                    <strong>Lic. Jessica Páez, Asesora Técnica en Seguros Personales</strong> 
                 </div>
                 
-                {/* BOTONES DIRECTOS (Sin formulario de email por ahora) */}
+                {/* Botón de contacto directo por WhatsApp */}
                 <div className="cta-btns">
-                    <a href="https://wa.me/59897113110" target="_blank" rel="noreferrer" className="btn-gold-cta">ANTICIPARTE</a>
-                    <button className="btn-white-cta" onClick={handleDownload}>
-                        {sendStatus === 'loading' ? 'GENERANDO...' : 'DESCARGAR PDF'}
-                    </button>
+                    <a href="https://wa.me/59897113110" target="_blank" rel="noreferrer" className="btn-gold-cta">CONTACTO DIRECTO (WA)</a>
                 </div>
             </div>
         </div>

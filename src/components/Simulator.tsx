@@ -1,3 +1,5 @@
+// Archivo: Simulator.tsx
+
 import React, { useState, useEffect } from "react";
 import { calcularJubilacion } from "../calculos/calculo";
 import { generarIAResultado } from "../utils/ai"; 
@@ -97,7 +99,14 @@ export default function Simulator({ setResultados }: any) {
             aportaAFAP: tieneAfapParaCalculo
         });
 
-        setResultados({ ...resultadoNumerico, analisisIA, datosCajaExtra: datosCaja });
+        // MODIFICACIÓN CLAVE: Agregamos regimen y edadActual al objeto de resultados
+        setResultados({ 
+            ...resultadoNumerico, 
+            analisisIA, 
+            datosCajaExtra: datosCaja,
+            regimen: regimen, 
+            edadActual: edadCalculada 
+        });
       } catch (e) { setError("Ocurrió un error inesperado."); }
   };
   
