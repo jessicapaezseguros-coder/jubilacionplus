@@ -5,8 +5,8 @@ import { generarPDF } from '../utils/pdfGenerator';
 import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
-// URL DE APPS SCRIPT APLICADA (Usando la última URL proporcionada)
-const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbzFRSYBYXvuf3HJD2uoNJo_PpkojYsXAwYu3eme-xmkf3CT1f1Lv9iMGVDqUhHwX0UI/exec"; 
+// ✅ URL ACTUALIZADA (Con el nuevo ID que enviaste)
+const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwc01dnsX9EsqMcMr2YVbrHpgcwGexqds3EzWPPdHGeoFP2FJhK3xAMah95Pn4GXbI1/exec"; 
 
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
 
@@ -38,9 +38,7 @@ export default function Results({ data, onReset }: any) {
     }
   };
 
-  // ----------------------------------------------------------------------
-  // FUNCIÓN CORREGIDA: ENVÍO DE DATOS A GOOGLE APPS SCRIPT
-  // ----------------------------------------------------------------------
+  // --- FUNCIÓN DE ENVÍO CORREGIDA ---
   const handleEmailSubmit = async () => {
     if (!isValidEmail(email)) {
         setEmailError("Ingresa un correo electrónico válido.");
@@ -50,39 +48,33 @@ export default function Results({ data, onReset }: any) {
     setEmailError('');
     setSendStatus('sending');
     
-    // 1. CREAR OBJETO FormData (Compatible con e.parameter en Google Apps Script)
     const formData = new FormData();
     formData.append('email', email);
     formData.append('regimen', data.regimen || 'N/A'); 
-    formData.append('edad', String(data.edadActual || 0)); // Convertir a string
-    formData.append('jubilacionEstimada', String(data.total)); // Convertir a string
-    formData.append('tasaReemplazo', String(Math.round(data.tasa))); // Convertir a string
+    formData.append('edad', String(data.edadActual || 0)); 
+    formData.append('jubilacionEstimada', String(data.total)); 
+    formData.append('tasaReemplazo', String(Math.round(data.tasa))); 
     
     try {
         const response = await fetch(GOOGLE_SHEET_ENDPOINT, {
             method: 'POST',
-            // NO se requiere el encabezado 'Content-Type' ni 'mode: cors' para FormData
             body: formData, 
         });
 
-        // 2. ESPERAR Y ANALIZAR LA RESPUESTA COMO JSON
         if (!response.ok) {
-            // Error de red (4xx o 5xx)
              throw new Error(`Error HTTP: ${response.status}`);
         }
         
-        const result = await response.json(); // Analizar la respuesta JSON del Apps Script
+        const result = await response.json(); 
         
-        // 3. EVALUAR EL OBJETO JSON RECIBIDO
         if (result.status === 'success') {
             setMailSent(true);
             generarPDF(data);
             setSendStatus('downloading');
             setTimeout(() => { setSendStatus('success'); }, 1500); 
         } else {
-            // Si el Apps Script devuelve status: 'error'
             setSendStatus('error');
-            setEmailError('Error del servidor: ' + (result.message || 'Error desconocido al registrar.')); 
+            setEmailError('Error del servidor: ' + (result.message || 'Error desconocido.')); 
         }
 
     } catch (e) {
@@ -91,7 +83,7 @@ export default function Results({ data, onReset }: any) {
         setEmailError('Fallo de conexión. Intenta más tarde.'); 
     }
   };
-  // ----------------------------------------------------------------------
+  // ----------------------------------
   
   const handleDownloadOnly = () => {
     setSendStatus('downloading');
