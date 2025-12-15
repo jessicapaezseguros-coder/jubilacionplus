@@ -91,7 +91,7 @@ export default function Results({ data, onReset }: any) {
     setTimeout(() => { setSendStatus('success'); }, 1500); 
   };
   
-  let submitButtonText = 'ENVIAR Y OBTENER PDF'; 
+  let submitButtonText = 'ENVIAR Y DESCARGAR PDF'; 
   if (sendStatus === 'sending') submitButtonText = 'ENVIANDO...';
   if (sendStatus === 'downloading') submitButtonText = 'GENERANDO PDF...';
   if (sendStatus === 'success') submitButtonText = '¡PDF LISTO!';
