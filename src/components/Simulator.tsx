@@ -65,6 +65,12 @@ export default function Simulator({ setResultados }: any) {
               cuota: seleccion.cuota
           };
       }
+      
+      // VALIDACIÓN CRÍTICA: Asegurar que los años de aporte sean válidos
+      if (!aporteNum || aporteNum <= 0) { 
+        setError("Ingresa el total de años de aporte (debe ser mayor a cero)."); 
+        return; 
+      }
 
       setError(""); 
       // LA VARIABLE 'tieneAfap' AQUI SOLO DEBE SER TRUE SI ES BPS y selecciona Sí

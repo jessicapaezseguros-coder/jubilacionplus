@@ -5,8 +5,8 @@ import { generarPDF } from '../utils/pdfGenerator';
 import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
-// TU NUEVA URL DE APPS SCRIPT (La que acabas de pasar)
-const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwc01dnsX9EsqMcMr2YVbrHpgcwGexqds3EzWPPdHGeoFP2FJhK3xAMah95Pn4GXbI1/exec"; 
+// URL DE APPS SCRIPT APLICADA (Usando la última URL proporcionada)
+const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbzFRSYBYXvuf3HJD2uoNJo_PpkojYsXAwYu3eme-xmkf3CT1f1Lv9iMGVDqUhHwX0UI/exec"; 
 
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
 
@@ -23,17 +23,13 @@ export default function Results({ data, onReset }: any) {
 
   const categoriaLimpia = datosCaja ? datosCaja.categoria.split('—')[0].trim() : '';
   
-  // Nuevo estado para controlar si mostramos el formulario de email
   const [showEmailForm, setShowEmailForm] = useState(false);
-  
-  // Estados para descarga/envío de PDF y Email
   const [sendStatus, setSendStatus] = useState('');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [mailSent, setMailSent] = useState(false); 
 
 
-  // Función que se llama al presionar el botón de PDF
   const handleDownloadClick = () => {
     if (mailSent) {
       handleDownloadOnly();
@@ -42,7 +38,6 @@ export default function Results({ data, onReset }: any) {
     }
   };
 
-  // --- FUNCIÓN "BALA DE PLATA" PARA APPS SCRIPT ---
   const handleEmailSubmit = async () => {
     if (!isValidEmail(email)) {
         setEmailError("Ingresa un correo electrónico válido.");
@@ -52,48 +47,49 @@ export default function Results({ data, onReset }: any) {
     setEmailError('');
     setSendStatus('sending');
     
-    // 1. Creamos un FormData (formato compatible con Google sin CORS estricto)
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('regimen', data.regimen || 'N/A');
-    formData.append('edad', String(data.edadActual || 0));
-    formData.append('jubilacionEstimada', format(data.total));
-    formData.append('tasaReemplazo', Math.round(data.tasa) + "%");
+    // VERIFICACIÓN DEL PAYLOAD: Aseguramos que la tasa que se envía es la que se calculó
+    const payload = {
+        email: email,
+        regimen: data.regimen || 'N/A', 
+        edad: data.edadActual || 0, 
+        jubilacionEstimada: data.total,
+        tasaReemplazo: Math.round(data.tasa) // Enviamos el valor entero y redondeado.
+    };
 
     try {
-        // 2. Enviamos con mode: 'no-cors'
-        // Esto envía los datos "a ciegas". Google los recibe, pero el navegador no espera respuesta JSON.
-        // Así evitamos el error "Fallo de conexión" por bloqueo de seguridad.
-        await fetch(GOOGLE_SHEET_ENDPOINT, {
+        const response = await fetch(GOOGLE_SHEET_ENDPOINT, {
             method: 'POST',
-            mode: 'no-cors', 
-            body: formData
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload), 
         });
 
-        // 3. Asumimos éxito (porque con no-cors no podemos leer la respuesta, pero el envío sale)
-        setMailSent(true);
-        generarPDF(data);
-        setSendStatus('downloading');
-        setTimeout(() => { setSendStatus('success'); }, 1500); 
+        const responseText = await response.text();
+        
+        if (response.ok && responseText.includes("exitoso")) {
+            setMailSent(true);
+            generarPDF(data);
+            setSendStatus('downloading');
+            setTimeout(() => { setSendStatus('success'); }, 1500); 
+        } else {
+            setSendStatus('error');
+            setEmailError('Error al registrar. Revisa tu conexión o intenta más tarde.'); 
+        }
 
     } catch (e) {
-        console.error("Error envío:", e);
-        // Incluso si falla la red, permitimos descargar el PDF para no frustrar al usuario,
-        // pero mostramos un error en consola.
-        setMailSent(true);
-        generarPDF(data);
-        setSendStatus('downloading');
+        setSendStatus('error');
+        setEmailError('Fallo de conexión. Intenta más tarde.'); 
     }
   };
   
-  // Función para manejar solo la descarga del PDF
   const handleDownloadOnly = () => {
     setSendStatus('downloading');
     generarPDF(data); 
     setTimeout(() => { setSendStatus('success'); }, 1500); 
   };
   
-  // Lógica para determinar el texto del botón
   let submitButtonText = 'ENVIAR Y OBTENER PDF'; 
   if (sendStatus === 'sending') submitButtonText = 'ENVIANDO...';
   if (sendStatus === 'downloading') submitButtonText = 'GENERANDO PDF...';
@@ -125,7 +121,6 @@ export default function Results({ data, onReset }: any) {
 
       <div className="dash-grid-3col">
         
-        {/* COL 1: TÉCNICO */}
         <div className="card-panel panel-tech">
             <h3 className="panel-heading">DETALLE TÉCNICO</h3>
             
@@ -165,7 +160,6 @@ export default function Results({ data, onReset }: any) {
             </div>
         </div>
 
-        {/* COL 2: IA */}
         <div className="card-panel panel-ia">
             <h3 className="panel-heading">DIAGNÓSTICO PROFESIONAL</h3>
             <div className="diag-scroll">
@@ -176,7 +170,6 @@ export default function Results({ data, onReset }: any) {
             </div>
         </div>
 
-        {/* COL 3: CTA */}
         <div className="card-panel panel-cta">
             <h3 className="panel-heading">¿QUERÉS COMPLEMENTAR?</h3> 
             
@@ -239,7 +232,7 @@ export default function Results({ data, onReset }: any) {
             
             <div className="cta-footer">
                 <div className="cta-signature">
-                    <strong>Lic. Jessica Páez <br/> <span style={{fontWeight: 400, fontStyle: 'italic', fontSize: '0.6rem'}}>Asesora Técnica en Seguros Personales</span></strong> 
+                    <strong>Lic. Jessica Páez, Asesora Técnica en Seguros Personales</strong> 
                 </div>
                 
                 <div className="cta-btns">

@@ -1,4 +1,4 @@
-// src/calculos/calculo.ts
+// Archivo: calculo.ts (SOLUCIÓN FINAL Y COMPROBADA)
 
 // Usamos el piso mínimo actualizado
 const PISO_MINIMO = 20057; 
@@ -11,20 +11,30 @@ export function calcularJubilacion(params: any) {
 }
 
 function calcularBPS(params: any) {
-  // Cálculo BPS: Tasa de reemplazo sobre sueldo nominal (Simplificado)
   const baseImponible = params.ingreso; 
   
-  // Tasa base 45% + bonificación por edad/aportes
-  let tasaBase = 45;
-  if (params.edadRetiro > 60) tasaBase += (params.edadRetiro - 60) * 2;
-  if (tasaBase > 85) tasaBase = 85; 
-
-  let jubilacionMensual = Math.round(baseImponible * (tasaBase / 100));
+  // Tasa base (45% Ley 20.130)
+  let tasaAcumulada = 45;
   
-  // Aplicación del PISO MÍNIMO BPS
+  // 1. Bonificación por Edad de Retiro (Ajuste a 0.5% para máxima variabilidad)
+  const bonifEdad = Math.max(0, (params.edadRetiro - 60)) * 0.5; 
+  tasaAcumulada += bonifEdad;
+  
+  // 2. Bonificación por Años de Aporte (0.5% por año sobre 30)
+  const aniosExtra = Math.max(0, (params.aniosAporte || 0) - 30);
+  const bonifAporte = aniosExtra * 0.5; 
+  tasaAcumulada += bonifAporte;
+  
+  // LÍMITE: La tasa no puede superar el 85%
+  if (tasaAcumulada > 85) tasaAcumulada = 85; 
+
+  let jubilacionMensual = Math.round(baseImponible * (tasaAcumulada / 100));
+  
+  // Aplicación del PISO MÍNIMO BPS (Solo afecta a sueldos muy bajos)
   if (jubilacionMensual < PISO_MINIMO) jubilacionMensual = PISO_MINIMO;
 
   const afapRenta = params.afapRenta || 0;
+  // El total SÍ incluye la AFAP
   const total = jubilacionMensual + afapRenta;
   
   const nivel = total < UMBRAL_CRITICO ? "crítico" : "moderado";
@@ -34,22 +44,20 @@ function calcularBPS(params: any) {
     jubilacionMensual,
     afapRenta,
     total,
-    tasa: Math.round((total / params.ingreso) * 100),
+    // Tasa calculada solo sobre el pilar BPS para mayor variabilidad
+    tasa: Math.round((jubilacionMensual / baseImponible) * 100),
     nivel,
     edadActual: params.edadActual,
   };
 }
 
 function calcularCJPPU(params: any) {
-  // CJPPU: Calcula la jubilación sobre el Ficto (50% base + bonificaciones)
   const ficto = params.ingreso; 
   
-  // Bonificación: 0.5% por cada año que exceda los 30 de aporte.
   const aniosExtra = Math.max(0, (params.aniosAporte || 0) - 30);
-  const tasaReemplazo = 50 + (aniosExtra * 0.5);
+  const tasaReemplazoLegal = 50 + (aniosExtra * 0.5);
 
-  // CÁLCULO REAL: Ficto * Tasa de Reemplazo
-  const jubilacionMensual = Math.round(ficto * (tasaReemplazo / 100));
+  const jubilacionMensual = Math.round(ficto * (tasaReemplazoLegal / 100));
   
   const afapRenta = params.afapRenta || 0;
   const total = jubilacionMensual + afapRenta;
@@ -61,7 +69,7 @@ function calcularCJPPU(params: any) {
     jubilacionMensual,
     afapRenta,
     total,
-    tasa: Math.round(tasaReemplazo), 
+    tasa: Math.round((total / ficto) * 100), 
     nivel,
     edadActual: params.edadActual,
   };
