@@ -38,6 +38,9 @@ export default function Results({ data, onReset }: any) {
     }
   };
 
+  // ----------------------------------------------------------------------
+  // FUNCIÓN CORREGIDA: ENVÍO DE DATOS A GOOGLE APPS SCRIPT
+  // ----------------------------------------------------------------------
   const handleEmailSubmit = async () => {
     if (!isValidEmail(email)) {
         setEmailError("Ingresa un correo electrónico válido.");
@@ -47,42 +50,48 @@ export default function Results({ data, onReset }: any) {
     setEmailError('');
     setSendStatus('sending');
     
-    // VERIFICACIÓN DEL PAYLOAD: Aseguramos que la tasa que se envía es la que se calculó
-    const payload = {
-        email: email,
-        regimen: data.regimen || 'N/A', 
-        edad: data.edadActual || 0, 
-        jubilacionEstimada: data.total,
-        tasaReemplazo: Math.round(data.tasa) // Enviamos el valor entero y redondeado.
-    };
-
+    // 1. CREAR OBJETO FormData (Compatible con e.parameter en Google Apps Script)
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('regimen', data.regimen || 'N/A'); 
+    formData.append('edad', String(data.edadActual || 0)); // Convertir a string
+    formData.append('jubilacionEstimada', String(data.total)); // Convertir a string
+    formData.append('tasaReemplazo', String(Math.round(data.tasa))); // Convertir a string
+    
     try {
         const response = await fetch(GOOGLE_SHEET_ENDPOINT, {
             method: 'POST',
-            mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload), 
+            // NO se requiere el encabezado 'Content-Type' ni 'mode: cors' para FormData
+            body: formData, 
         });
 
-        const responseText = await response.text();
+        // 2. ESPERAR Y ANALIZAR LA RESPUESTA COMO JSON
+        if (!response.ok) {
+            // Error de red (4xx o 5xx)
+             throw new Error(`Error HTTP: ${response.status}`);
+        }
         
-        if (response.ok && responseText.includes("exitoso")) {
+        const result = await response.json(); // Analizar la respuesta JSON del Apps Script
+        
+        // 3. EVALUAR EL OBJETO JSON RECIBIDO
+        if (result.status === 'success') {
             setMailSent(true);
             generarPDF(data);
             setSendStatus('downloading');
             setTimeout(() => { setSendStatus('success'); }, 1500); 
         } else {
+            // Si el Apps Script devuelve status: 'error'
             setSendStatus('error');
-            setEmailError('Error al registrar. Revisa tu conexión o intenta más tarde.'); 
+            setEmailError('Error del servidor: ' + (result.message || 'Error desconocido al registrar.')); 
         }
 
     } catch (e) {
         setSendStatus('error');
+        console.error('Fallo de conexión:', e);
         setEmailError('Fallo de conexión. Intenta más tarde.'); 
     }
   };
+  // ----------------------------------------------------------------------
   
   const handleDownloadOnly = () => {
     setSendStatus('downloading');
