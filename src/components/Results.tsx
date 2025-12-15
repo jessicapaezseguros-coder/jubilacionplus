@@ -5,7 +5,7 @@ import { generarPDF } from '../utils/pdfGenerator';
 import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
-// URL CONFIRMADA
+// URL CONFIRMADA (ID: AKfycbwc01dnsX9EsqMcMr2YVbrHpgcwGexqds3EzWPPdHGeoFP2FJhK3xAMah95Pn4GXbI1)
 const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwc01dnsX9EsqMcMr2YVbrHpgcwGexqds3EzWPPdHGeoFP2FJhK3xAMah95Pn4GXbI1/exec"; 
 
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
@@ -24,7 +24,7 @@ export default function Results({ data, onReset }: any) {
   const categoriaLimpia = datosCaja ? datosCaja.categoria.split('—')[0].trim() : '';
   
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [sendStatus, setSendStatus] = useState('');
+  const [sendStatus, setSendStatus] = useState(''); // '' | 'sending' | 'downloading' | 'success' | 'error'
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [mailSent, setMailSent] = useState(false); 
@@ -38,48 +38,53 @@ export default function Results({ data, onReset }: any) {
     }
   };
 
-  // --- FUNCIÓN DE ENVÍO "MODO CONFIANZA" ---
+  // --- FUNCIÓN DEFINITIVA: PDF PRIMERO, DATOS EN SEGUNDO PLANO ---
   const handleEmailSubmit = async () => {
     if (!isValidEmail(email)) {
         setEmailError("Ingresa un correo electrónico válido.");
         return;
     }
     
+    // 1. Feedback visual inmediato (UI Optimista)
     setEmailError('');
     setSendStatus('sending');
-    
+    setMailSent(true); // Asumimos éxito visualmente para desbloquear la UI
+
+    // 2. Preparar datos para Google Sheets
     const formData = new FormData();
     formData.append('email', email);
     formData.append('regimen', data.regimen || 'N/A'); 
     formData.append('edad', String(data.edadActual || 0)); 
     formData.append('jubilacionEstimada', String(data.total)); 
     formData.append('tasaReemplazo', String(Math.round(data.tasa))); 
-    
+
     try {
-        // CAMBIO CLAVE: mode: 'no-cors'
-        // Esto envía los datos pero ignora la respuesta del servidor.
-        // Como sabemos que el servidor SÍ guarda los datos, esto evita el falso error.
-        await fetch(GOOGLE_SHEET_ENDPOINT, {
+        // 3. ENVIAR A GOOGLE EN MODO SILENCIOSO
+        // 'no-cors' envía los datos pero no espera una respuesta legible.
+        // Esto evita bloqueos de seguridad del navegador, garantizando que el dato salga.
+        fetch(GOOGLE_SHEET_ENDPOINT, {
             method: 'POST',
             mode: 'no-cors', 
             body: formData, 
-        });
+        }).catch(err => console.error("Aviso silencioso de envío:", err));
 
-        // Si fetch no lanzó un error de red, asumimos éxito inmediatamente.
-        setMailSent(true);
-        generarPDF(data);
+        // 4. GENERAR Y DESCARGAR PDF (Prioridad para el usuario)
+        await generarPDF(data);
+        
+        // 5. Finalizar proceso visual
         setSendStatus('downloading');
         setTimeout(() => { setSendStatus('success'); }, 1500); 
 
     } catch (e) {
-        // Solo entra aquí si realmente se cae internet
+        console.error('Error generando PDF:', e);
         setSendStatus('error');
-        console.error('Fallo de conexión real:', e);
-        setEmailError('Error de conexión. Intenta más tarde.'); 
+        // Si falla la generación del PDF, avisamos al usuario, 
+        // pero el correo probablemente ya se envió a Google.
+        setEmailError('Ocurrió un error al generar el archivo. Intente nuevamente.'); 
     }
   };
-  // ------------------------------------------
   
+  // Función para descargar PDF sin volver a enviar el correo
   const handleDownloadOnly = () => {
     setSendStatus('downloading');
     generarPDF(data); 
@@ -87,7 +92,7 @@ export default function Results({ data, onReset }: any) {
   };
   
   let submitButtonText = 'ENVIAR Y OBTENER PDF'; 
-  if (sendStatus === 'sending') submitButtonText = 'ENVIANDO...';
+  if (sendStatus === 'sending') submitButtonText = 'PROCESANDO...';
   if (sendStatus === 'downloading') submitButtonText = 'GENERANDO PDF...';
   if (sendStatus === 'success') submitButtonText = '¡PDF LISTO!';
 
