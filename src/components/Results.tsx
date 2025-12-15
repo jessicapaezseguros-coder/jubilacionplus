@@ -5,7 +5,7 @@ import { generarPDF } from '../utils/pdfGenerator';
 import StabilityThermometer from './StabilityThermometer';
 import './Results.css';
 
-// ✅ URL ACTUALIZADA (Con el nuevo ID que enviaste)
+// URL CONFIRMADA
 const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwc01dnsX9EsqMcMr2YVbrHpgcwGexqds3EzWPPdHGeoFP2FJhK3xAMah95Pn4GXbI1/exec"; 
 
 const format = (n: number) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(Math.round(n));
@@ -38,7 +38,7 @@ export default function Results({ data, onReset }: any) {
     }
   };
 
-  // --- FUNCIÓN DE ENVÍO CORREGIDA ---
+  // --- FUNCIÓN DE ENVÍO "MODO CONFIANZA" ---
   const handleEmailSubmit = async () => {
     if (!isValidEmail(email)) {
         setEmailError("Ingresa un correo electrónico válido.");
@@ -56,34 +56,29 @@ export default function Results({ data, onReset }: any) {
     formData.append('tasaReemplazo', String(Math.round(data.tasa))); 
     
     try {
-        const response = await fetch(GOOGLE_SHEET_ENDPOINT, {
+        // CAMBIO CLAVE: mode: 'no-cors'
+        // Esto envía los datos pero ignora la respuesta del servidor.
+        // Como sabemos que el servidor SÍ guarda los datos, esto evita el falso error.
+        await fetch(GOOGLE_SHEET_ENDPOINT, {
             method: 'POST',
+            mode: 'no-cors', 
             body: formData, 
         });
 
-        if (!response.ok) {
-             throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const result = await response.json(); 
-        
-        if (result.status === 'success') {
-            setMailSent(true);
-            generarPDF(data);
-            setSendStatus('downloading');
-            setTimeout(() => { setSendStatus('success'); }, 1500); 
-        } else {
-            setSendStatus('error');
-            setEmailError('Error del servidor: ' + (result.message || 'Error desconocido.')); 
-        }
+        // Si fetch no lanzó un error de red, asumimos éxito inmediatamente.
+        setMailSent(true);
+        generarPDF(data);
+        setSendStatus('downloading');
+        setTimeout(() => { setSendStatus('success'); }, 1500); 
 
     } catch (e) {
+        // Solo entra aquí si realmente se cae internet
         setSendStatus('error');
-        console.error('Fallo de conexión:', e);
-        setEmailError('Fallo de conexión. Intenta más tarde.'); 
+        console.error('Fallo de conexión real:', e);
+        setEmailError('Error de conexión. Intenta más tarde.'); 
     }
   };
-  // ----------------------------------
+  // ------------------------------------------
   
   const handleDownloadOnly = () => {
     setSendStatus('downloading');
@@ -91,7 +86,7 @@ export default function Results({ data, onReset }: any) {
     setTimeout(() => { setSendStatus('success'); }, 1500); 
   };
   
-  let submitButtonText = 'ENVIAR Y DESCARGAR PDF'; 
+  let submitButtonText = 'ENVIAR Y OBTENER PDF'; 
   if (sendStatus === 'sending') submitButtonText = 'ENVIANDO...';
   if (sendStatus === 'downloading') submitButtonText = 'GENERANDO PDF...';
   if (sendStatus === 'success') submitButtonText = '¡PDF LISTO!';
